@@ -21,21 +21,14 @@
         
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; }
         #viewport:active { cursor: grabbing; }
+        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        /* Хак для ПК: Холст сглаживается аппаратно в 3D, убирая шакальные пиксели при зуме */
-        #canvas { 
-            position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; 
-            will-change: transform;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
-        
+        /* Графика БЕЗ потерь: Шрифты всегда 16px, рендер через Translate3d аппаратно сглаживается */
         .player-tag { 
             position: absolute; font-weight: bold; white-space: nowrap; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
-            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1;
-            text-rendering: optimizeLegibility; -webkit-font-smoothing: subpixel-antialiased; -moz-osx-font-smoothing: auto;
-            transform: translateZ(0);
+            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px; transform-origin: left top;
+            backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d;
+            text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
         }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
@@ -90,7 +83,9 @@
         
         let dragActive = false, dragPlayerId = null, dragElement = null;
         
-        function updateTransform() { canvas.style.transform = "translate(" + panX + "px," + panY + "px) scale(" + zoom + ")"; }
+        // Математический триггер перерисовки вместо размытого scale холста
+        function updateTransform() { renderPlayers(); }
+        
         if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
         
         adminBtn.addEventListener("click", () => {
@@ -119,46 +114,16 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Движение карты мышкой (ПК)
+        // 💻 ПОЛНОСТЬЮ ЧИСТЫЙ ДВИЖОК ДЛЯ ПК (Строго мышь, без тачей)
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0 || dragActive) return;
-            if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
-            if ((e.target.classList.contains("player-tag") || e.target.parentNode.classList.contains("player-tag") || e.target.parentNode.parentNode.classList.contains("player-tag")) && isTargetAdmin) return; 
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
-
-        // Движение карты пальцами (Смартфоны)
-        let touchStartDist = 0, touchStartZoom = 1;
-        viewport.addEventListener("touchstart", e => {
-            if (dragActive) return;
-            if (e.touches.length === 1) {
-                if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
-                if ((e.target.classList.contains("player-tag") || e.target.parentNode.classList.contains("player-tag") || e.target.parentNode.parentNode.classList.contains("player-tag")) && isTargetAdmin) return;
-                isPanning = true; startX = e.touches[0].clientX - panX; startY = e.touches[0].clientY - panY;
-            } else if (e.touches.length === 2) {
-                isPanning = false;
-                touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                touchStartZoom = zoom;
-            }
+        window.addEventListener("mousemove", e => { 
+            if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
         });
-
-        window.addEventListener("touchmove", e => {
-            if (isPanning && e.touches.length === 1) {
-                panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
-            } else if (e.touches.length === 2) {
-                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                const factor = dist / touchStartDist;
-                const oldZoom = zoom;
-                zoom = Math.max(0.01, Math.min(30, touchStartZoom * factor));
-                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                panX = midX - (midX - panX) * (zoom / oldZoom);
-                panY = midY - (midY - panY) * (zoom / oldZoom);
-                updateTransform();
-            }
-        });
-        window.addEventListener("touchend", () => { isPanning = false; });
-
+        window.addEventListener("mouseup", () => isPanning = false);
+        
         window.addEventListener("wheel", e => {
             const oldZoom = zoom; const f = 1.1;
             if (e.deltaY < 0) { if (zoom < 30) zoom *= f; } else { if (zoom > 0.01) zoom /= f; }
@@ -178,6 +143,34 @@
             players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
             renderPlayers();
         });
+
+        // 📱 ПОЛНОСТЬЮ ЧИСТЫЙ ДВИЖОК ДЛЯ СМАРТФОНОВ (Строго тачи, без мыши)
+        let touchStartDist = 0, touchStartZoom = 1;
+        viewport.addEventListener("touchstart", e => {
+            if (dragActive) return;
+            if (e.touches.length === 1) {
+                isPanning = true; startX = e.touches[0].clientX - panX; startY = e.touches[0].clientY - panY;
+            } else if (e.touches.length === 2) {
+                isPanning = false;
+                touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                touchStartZoom = zoom;
+            }
+        });
+        window.addEventListener("touchmove", e => {
+            if (isPanning && e.touches.length === 1) {
+                panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
+            } else if (e.touches.length === 2) {
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                const factor = dist / touchStartDist; const oldZoom = zoom;
+                zoom = Math.max(0.01, Math.min(30, touchStartZoom * factor));
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                panX = midX - (midX - panX) * (zoom / oldZoom);
+                panY = midY - (midY - panY) * (zoom / oldZoom);
+                updateTransform();
+            }
+        });
+        window.addEventListener("touchend", () => { isPanning = false; });
 
         mobileAddBtn.addEventListener("click", () => {
             if (!isTargetAdmin) return;
@@ -244,10 +237,15 @@
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
-                t.style.left = p.x + "px";
-                t.style.top = p.y + "px";
+                t.style.left = "0px";
+                t.style.top = "0px";
+                
+                const currentScale = (p.scale || 1) * zoom;
+                const currentX = p.x * zoom + panX;
+                const currentY = p.y * zoom + panY;
+                
+                t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
                 t.style.color = p.color || "#000000";
-                t.style.fontSize = (16 * (p.scale || 1)) + "px";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -278,13 +276,12 @@
                         dragElement = t;
                     };
                     t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); onStart(); } });
-                    t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); onStart(); } });
+                    t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); startDrag(); } });
                 }
                 canvas.appendChild(t);
             });
         }
 
-        // Полностью изолированная математика перемещения и магнита Word-style
         const processDrag = (clientX, clientY) => {
             if (!dragActive || !dragPlayerId || !dragElement) return;
             const p = players.find(pl => pl.id === dragPlayerId);
@@ -295,7 +292,10 @@
             let snapH = false, snapV = false;
             
             p.x = targetX; p.y = targetY;
-            dragElement.style.left = targetX + "px"; dragElement.style.top = targetY + "px";
+            const currentScale = (p.scale || 1) * zoom;
+            const nextX = targetX * zoom + panX;
+            const nextY = targetY * zoom + panY;
+            dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
             
             let currentRect = dragElement.getBoundingClientRect();
 
@@ -343,7 +343,9 @@
             if (!snapH) guideH.style.display = "none";
             if (!snapV) guideV.style.display = "none";
             p.x = targetX; p.y = targetY;
-            dragElement.style.left = p.x + "px"; dragElement.style.top = p.y + "px";
+            const finalX = p.x * zoom + panX;
+            const finalY = p.y * zoom + panY;
+            dragElement.style.transform = "translate3d(" + finalX + "px, " + finalY + "px, 0) scale(" + currentScale + ")";
         };
 
         const stopDrag = () => {
@@ -353,9 +355,8 @@
             }
         };
 
-        // Исправлено: ПК слушает СТРОГО мышку, телефоны слушают СТРОГО пальцы
         window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
-        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
+        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches.clientX, e.touches.clientY); });
         window.addEventListener("mouseup", stopDrag);
         window.addEventListener("touchend", stopDrag);
 
