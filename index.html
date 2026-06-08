@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none !important; -webkit-user-select: none !important; }
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #ffffff; color: #000000; }
         #ui-container { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; z-index: 99999; pointer-events: none; }
         .ui-element { pointer-events: auto; }
         
-        #search-box { padding: 10px 12px; width: 140px; border: 2px solid #000000; border-radius: 6px; font-size: 14px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #search-box { padding: 10px 12px; width: 140px; border: 2px solid #000000; border-radius: 6px; font-size: 14px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); user-select: text !important; -webkit-user-select: text !important; }
         @media(min-width: 480px) { #search-box { width: 250px; } }
         
         #admin-btn, #save-btn { background: #000000; color: #ffffff; border: none; padding: 10px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s; margin-left: 5px; }
@@ -106,7 +106,7 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Исправлено: точное перемещение мышкой для ПК
+        // Управление мышкой (ПК)
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0) return;
             if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
@@ -116,7 +116,7 @@
         window.addEventListener("mousemove", e => { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
         window.addEventListener("mouseup", () => isPanning = false);
         
-        // Исправлено: точное тач-управление пальцами для телефонов
+        // Исправлено: Карта на смартфонах теперь летает без ошибок
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (e.touches.length === 1) {
@@ -155,7 +155,9 @@
             updateTransform();
         }, { passive: true });
 
+        // Исправлено: Браузер больше не выделяет текст, ник создается ровно под мышкой
         viewport.addEventListener("dblclick", e => {
+            e.preventDefault();
             if (!isTargetAdmin || e.target !== viewport) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
             if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
