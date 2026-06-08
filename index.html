@@ -17,26 +17,14 @@
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; }
         
-        /* Исправление графического бага: добавлен padding-bottom и форсирование аппаратного сглаживания */
         .player-tag { 
-            position: absolute; 
-            font-weight: bold; 
-            white-space: nowrap; 
-            user-select: none; 
-            color: #000000; 
-            background: none !important; 
-            border: none !important; 
-            box-shadow: none !important; 
-            padding: 0 0 3px 0 !important; /* Отступ снизу для безопасного рендера хвостиков букв р, у, д */
-            display: flex; 
-            align-items: center; 
-            will-change: transform, left, top; /* Оптимизация рендеринга при движении */
-            line-height: 1.1;
+            position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; 
+            background: none !important; border: none !important; box-shadow: none !important; padding: 0 0 3px 0 !important; 
+            display: flex; align-items: center; will-change: transform, left, top; line-height: 1.1;
         }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
-        
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
         
@@ -47,9 +35,10 @@
         .modal-box p { font-size: 14px; color: #333; line-height: 1.4; word-break: break-word; }
         .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 120px; }
         .modal-box button { width: 100%; padding: 10px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .guide-line { position: absolute; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
-        #guide-h { width: 100000px; height: 1px; border-top: 1px dashed #2f80ed; left: -50000px; }
-        #guide-v { width: 1px; height: 100000px; border-left: 1px dashed #2f80ed; top: -50000px; }
+        
+        .guide-line { position: fixed; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
+        #guide-h { width: 100vw; height: 1px; border-top: 1px dashed #2f80ed; left: 0; }
+        #guide-v { width: 1px; height: 100vh; border-left: 1px dashed #2f80ed; top: 0; }
     </style>
 </head>
 <body>
@@ -57,7 +46,11 @@
         <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник на карте..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
     </div>
     <div id="nav-tip">ЛКМ: Перемещение карты | ПКМ на ник: Меню/Свойства | Двойной клик: Создать ник (Админ)</div>
-    <div id="viewport"><div id="canvas"><div id="guide-h" class="guide-line"></div><div id="guide-v" class="guide-line"></div></div></div>
+    <div id="viewport"><div id="canvas"></div></div>
+    
+    <div id="guide-h" class="guide-line"></div>
+    <div id="guide-v" class="guide-line"></div>
+    
     <div id="info-modal"><div class="modal-box" id="modal-box"></div></div>
     <script>
         const SECRET_KEY = "sandpex2019wh";
@@ -167,11 +160,11 @@
                 document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; });
             }
         }
-
         function renderPlayers(){
             canvas.innerHTML = "";
             players.forEach(p => {
                 const t = document.createElement("div"); t.className = "player-tag";
+                t.setAttribute("data-id", p.id);
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 t.style.left = p.x + "px"; t.style.top = p.y + "px";
@@ -199,11 +192,56 @@
                             let targetX = (e.clientX - panX) / zoom;
                             let targetY = (e.clientY - panY) / zoom;
                             let snapH = false, snapV = false;
+                            
+                            p.x = targetX; p.y = targetY;
+                            t.style.left = targetX + "px"; t.style.top = targetY + "px";
+                            
+                            let currentRect = t.getBoundingClientRect();
 
                             players.forEach(other => {
                                 if (other.id !== p.id && other.pinned) {
-                                    if (Math.abs(targetY - other.y) < 15) { targetY = other.y; snapH = true; guideH.style.top = other.y + "px"; guideH.style.display = "block"; }
-                                    if (Math.abs(targetX - other.x) < 15) { targetX = other.x; snapV = true; guideV.style.left = other.x + "px"; guideV.style.display = "block"; }
+                                    let otherEl = canvas.querySelector(`[data-id="${other.id}"]`);
+                                    if(!otherEl) return;
+                                    let otherRect = otherEl.getBoundingClientRect();
+
+                                    if (Math.abs(e.clientY - otherRect.top - otherRect.height/2) < 15) {
+                                        targetY = other.y; snapH = true;
+                                        guideH.style.top = (otherRect.top + otherRect.height/2) + "px";
+                                        guideH.style.display = "block";
+                                    }
+                                    if (Math.abs(e.clientX - otherRect.left - otherRect.width/2) < 15) {
+                                        targetX = other.x; snapV = true;
+                                        guideV.style.left = (otherRect.left + otherRect.width/2) + "px";
+                                        guideV.style.display = "block";
+                                    }
+
+                                    players.forEach(secondOther => {
+                                        if(secondOther.id !== p.id && secondOther.id !== other.id && secondOther.pinned) {
+                                            let secEl = canvas.querySelector(`[data-id="${secondOther.id}"]`);
+                                            if(!secEl) return;
+                                            let secRect = secEl.getBoundingClientRect();
+
+                                            let standardGapX = Math.abs(otherRect.left - secRect.left);
+                                            if(standardGapX > 10) {
+                                                if(Math.abs(Math.abs(currentRect.left - otherRect.left) - standardGapX) < 15) {
+                                                    targetX = other.x + (otherRect.left - secRect.left) / zoom;
+                                                    snapV = true;
+                                                    guideV.style.left = currentRect.left + "px";
+                                                    guideV.style.display = "block";
+                                                }
+                                            }
+
+                                            let standardGapY = Math.abs(otherRect.top - secRect.top);
+                                            if(standardGapY > 10) {
+                                                if(Math.abs(Math.abs(currentRect.top - otherRect.top) - standardGapY) < 15) {
+                                                    targetY = other.y + (otherRect.top - secRect.top) / zoom;
+                                                    snapH = true;
+                                                    guideH.style.top = currentRect.top + "px";
+                                                    guideH.style.display = "block";
+                                                }
+                                            }
+                                        }
+                                    });
                                 }
                             });
 
@@ -223,4 +261,3 @@
     </script>
 </body>
 </html>
-
