@@ -21,16 +21,21 @@
         
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; }
         #viewport:active { cursor: grabbing; }
-        #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; will-change: transform; }
         
-        /* Фикс качества: Текст рендерится аппаратно в высоком разрешении без пикселей */
+        /* Хак для ПК: Холст сглаживается аппаратно в 3D, убирая шакальные пиксели при зуме */
+        #canvas { 
+            position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; 
+            will-change: transform;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        
         .player-tag { 
             position: absolute; font-weight: bold; white-space: nowrap; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
             padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1;
-            text-rendering: optimizeLegibility;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            transform: translateZ(0); /* Форсирует чистый векторный рендер видеокарты */
+            text-rendering: optimizeLegibility; -webkit-font-smoothing: subpixel-antialiased; -moz-osx-font-smoothing: auto;
+            transform: translateZ(0);
         }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
@@ -122,7 +127,7 @@
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
 
-        // Исправлено: Карта на смартфонах теперь летает идеально через e.touches[0]
+        // Движение карты пальцами (Смартфоны)
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (dragActive) return;
@@ -279,6 +284,7 @@
             });
         }
 
+        // Полностью изолированная математика перемещения и магнита Word-style
         const processDrag = (clientX, clientY) => {
             if (!dragActive || !dragPlayerId || !dragElement) return;
             const p = players.find(pl => pl.id === dragPlayerId);
@@ -347,7 +353,8 @@
             }
         };
 
-        window.addEventListener("mousemove", e => processDrag(e.clientX, e.clientY));
+        // Исправлено: ПК слушает СТРОГО мышку, телефоны слушают СТРОГО пальцы
+        window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
         window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
         window.addEventListener("mouseup", stopDrag);
         window.addEventListener("touchend", stopDrag);
