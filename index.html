@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sandpex — Карта ников</title>
+    <link rel="stylesheet" href="https://unpkg.com">
+    <style>
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        #canvas-container { width: 100%; height: 100%; }
+        .viewer-mode .tl-toolbar, .viewer-mode .tl-sidebar, .viewer-mode .tl-context-menu { display: none !important; }
+        #mode-indicator {
+            position: fixed; top: 10px; left: 10px; z-index: 9999;
+            background: rgba(0,0,0,0.8); color: white; padding: 6px 12px;
+            border-radius: 4px; font-size: 13px; font-weight: bold; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mode-indicator">sandpex | Режим: Просмотр (Для админа: Ctrl + Shift + L)</div>
+    <div id="canvas-container" class="viewer-mode"></div>
+
+    <script type="module">
+        import { Tldraw } from 'https://unpkg.com'
+        import React from 'https://esm.sh'
+        import ReactDOM from 'https://esm.sh'
+
+        // ВАШ ОБНОВЛЕННЫЙ ПАРОЛЬ ДЛЯ ВХОДА
+        const ADMIN_PASSWORD = 'sandpex2019wh'; 
+
+        const container = document.getElementById('canvas-container');
+        const indicator = document.getElementById('mode-indicator');
+
+        function enableAdminMode() {
+            container.classList.remove('viewer-mode');
+            indicator.textContent = "sandpex | Режим: Администратор";
+            indicator.style.background = "#2ecc71";
+        }
+
+        if (localStorage.getItem('sandpex_admin') === 'true') {
+            enableAdminMode();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyL') {
+                const pass = prompt('Введите пароль для sandpex:');
+                if (pass === ADMIN_PASSWORD) {
+                    localStorage.setItem('sandpex_admin', 'true');
+                    enableAdminMode();
+                    alert('Доступ открыт!');
+                    window.location.reload();
+                } else {
+                    alert('Неверный пароль!');
+                }
+            }
+        });
+
+        const root = ReactDOM.createRoot(container);
+        root.render(React.createElement(Tldraw, { 
+            persistenceKey: "sandpex-canvas-storage" 
+        }));
+    </script>
+</body>
+</html>
