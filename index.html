@@ -16,10 +16,16 @@
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; }
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; }
-        .player-tag { position: absolute; font-weight: bold; white-space: nowrap; user-select: none; }
+        
+        .player-tag { position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; display: flex; align-items: center; }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
+        
+        /* Исправление: Булавка полностью ПРЯЧЕТСЯ и показывается ТОЛЬКО админу */
+        .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
+        .admin-mode .pin-icon { display: inline-block; }
+        
         #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 12px; pointer-events: none; z-index: 999; }
         #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; }
         .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; }
@@ -27,7 +33,6 @@
         .modal-box p { font-size: 14px; color: #333; line-height: 1.4; word-break: break-word; }
         .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 120px; }
         .modal-box button { width: 100%; padding: 10px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        /* Линии выравнивания Word-style */
         .guide-line { position: absolute; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
         #guide-h { width: 100000px; height: 1px; border-top: 1px dashed #2f80ed; left: -50000px; }
         #guide-v { width: 1px; height: 100000px; border-left: 1px dashed #2f80ed; top: -50000px; }
@@ -83,11 +88,10 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Исправлено: перемещение карты ТОЛЬКО по ЛКМ (e.button === 0)
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0) return;
-            if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag")) return;
-            if ((e.target.classList.contains("player-tag") || e.target.parentNode.classList.contains("player-tag")) && isTargetAdmin) return; 
+            if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
+            if ((e.target.classList.contains("player-tag") || e.target.parentNode.classList.contains("player-tag") || e.target.parentNode.parentNode.classList.contains("player-tag")) && isTargetAdmin) return; 
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
         window.addEventListener("mousemove", e => { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
@@ -153,15 +157,19 @@
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 t.style.left = p.x + "px"; t.style.top = p.y + "px";
                 t.style.color = p.color || "#000000";
-                
-                // Применение индивидуального масштаба
                 t.style.fontSize = (16 * (p.scale || 1)) + "px";
-                if (p.pinned) { t.style.fontWeight = "900"; s.textContent = "📌 " + p.name; }
+                
+                if (p.pinned) {
+                    t.style.fontWeight = "900";
+                    const pin = document.createElement("span");
+                    pin.className = "pin-icon";
+                    pin.textContent = "📌";
+                    t.appendChild(pin);
+                }
 
-                t.addEventListener("contextmenu", (e) => showPlayerMenu(p, e));
+                t.addEventListener("contextmenu", e => showPlayerMenu(p, e));
                 d.addEventListener("click", e => { e.stopPropagation(); players = players.filter(pl => pl.id !== p.id); renderPlayers(); });
                 
-                // Перетаскивание: только по ЛКМ и если ник НЕ закреплен
                 if (isTargetAdmin && !p.pinned) {
                     let drag = false;
                     t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); drag = true; } });
@@ -171,7 +179,6 @@
                             let targetY = (e.clientY - panY) / zoom;
                             let snapH = false, snapV = false;
 
-                            // Поиск закрепленных ников для Word-выравнивания
                             players.forEach(other => {
                                 if (other.id !== p.id && other.pinned) {
                                     if (Math.abs(targetY - other.y) < 15) { targetY = other.y; snapH = true; guideH.style.top = other.y + "px"; guideH.style.display = "block"; }
