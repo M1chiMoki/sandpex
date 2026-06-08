@@ -57,7 +57,7 @@
         <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
     </div>
     <button id="mobile-add-btn">+</button>
-    <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Удержание: Создать ник</div>
+    <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Кнопка «+»: Создать ник</div>
     <div id="viewport"><div id="canvas"></div></div>
     
     <div id="guide-h" class="guide-line"></div>
@@ -112,7 +112,6 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Глобальная и безотказная функция создания нового игрока
         function createNewPlayer(clientX, clientY) {
             if (!isTargetAdmin) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
@@ -123,19 +122,13 @@
             renderPlayers();
         }
 
-        // Движение карты мышкой + Исправленный таймер долгого зажатия
+        // Движение карты мышкой (ПК)
         let mapHoldTimer;
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0 || dragActive) return;
-            
-            // Запускаем таймер зажатия на пустом месте (1.5 сек)
             if (e.target === viewport) {
-                mapHoldTimer = setTimeout(() => {
-                    createNewPlayer(e.clientX, e.clientY);
-                    isPanning = false;
-                }, 1500);
+                mapHoldTimer = setTimeout(() => { createNewPlayer(e.clientX, e.clientY); isPanning = false; }, 1500);
             }
-            
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
 
@@ -143,37 +136,35 @@
             clearTimeout(mapHoldTimer);
             if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
         });
+        window.addEventListener("mouseup", () => { clearTimeout(mapHoldTimer); isPanning = false; });
 
-        window.addEventListener("mouseup", () => {
-            clearTimeout(mapHoldTimer);
-            isPanning = false;
-        });
-
-        // Исправлено: Глобальный перехват двойного клика, которому не мешают слои canvas
         window.addEventListener("dblclick", e => {
             if (!isTargetAdmin || dragActive) return;
-            // Проверяем, что кликнули по свободному месту, а не по интерфейсу или другому нику
             if (e.target === viewport || e.target.id === "ui-container" || e.target.tagName === "BODY" || e.target.id === "canvas") {
-                e.preventDefault();
-                createNewPlayer(e.clientX, e.clientY);
+                e.preventDefault(); createNewPlayer(e.clientX, e.clientY);
             }
         });
         
-        // Движение карты пальцами (Смартфоны)
+        // Исправлено: Движение карты пальцами через правильные массивы тачей
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (dragActive) return;
             if (e.touches.length === 1) {
-                isPanning = true; startX = e.touches[0].clientX - panX; startY = e.touches[0].clientY - panY;
+                isPanning = true; 
+                startX = e.touches[0].clientX - panX; 
+                startY = e.touches[0].clientY - panY;
             } else if (e.touches.length === 2) {
                 isPanning = false;
                 touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 touchStartZoom = zoom;
             }
         });
+        
         window.addEventListener("touchmove", e => {
             if (isPanning && e.touches.length === 1) {
-                panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
+                panX = e.touches[0].clientX - startX; 
+                panY = e.touches[0].clientY - startY; 
+                updateTransform();
             } else if (e.touches.length === 2) {
                 const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 const factor = dist / touchStartDist; const oldZoom = zoom;
@@ -365,7 +356,7 @@
         };
 
         window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
-        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches.clientX, e.touches.clientY); });
+        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
         window.addEventListener("mouseup", stopDrag);
         window.addEventListener("touchend", stopDrag);
 
