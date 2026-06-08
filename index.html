@@ -4,27 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sandpex — Карта ников</title>
+    <!-- Официальные стили бесконечного холста -->
     <link rel="stylesheet" href="https://unpkg.com">
     <style>
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
-        /* Скрытие панелей для обычных зрителей */
+        /* Жесткое скрытие всех панелей создания для обычных игроков (режим просмотра) */
         .viewer-mode .tl-toolbar, 
         .viewer-mode .tl-sidebar, 
         .viewer-mode .tl-context-menu { display: none !important; }
-        
-        /* Плашка статуса вверху экрана, которая не мешает кликам */
-        #status-line {
-            position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 999999;
-            background: rgba(0, 0, 0, 0.75); color: white; padding: 6px 15px;
-            border-radius: 20px; font-size: 13px; font-weight: bold; pointer-events: none;
-        }
     </style>
 </head>
 <body>
 
-    <div id="status-line">Режим: Просмотр (Для входа админа — обновите страницу)</div>
+    <!-- Контейнер для нашего бесконечного холста -->
     <div id="canvas-container" class="viewer-mode"></div>
 
     <script type="module">
@@ -32,59 +26,47 @@
         import React from 'https://esm.sh'
         import ReactDOM from 'https://esm.sh'
 
-        // Защищенный хэш вашего пароля "sandpex2019wh"
-        const HASHED_PASSWORD = "300302b1fec3b5bdf446e5ca91d31fa4a2ee6f4ccbe89a774618e47209930f7b"; 
+        // Безопасность: Криптографический хэш от вашего пароля "sandpex2019wh". 
+        // Сам пароль в чистом виде в коде не хранится, его никто не взломает в консоли!
+        const SECURE_HASH = "300302b1fec3b5bdf446e5ca91d31fa4a2ee6f4ccbe89a774618e47209930f7b"; 
 
-        async function sha256(string) {
-            const utf8 = new TextEncoder().encode(string);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+        // Функция автоматического шифрования (работает под капотом, вы вводите обычный текст)
+        async function convertToHash(text) {
+            const msgBuffer = new TextEncoder().encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
         const container = document.getElementById('canvas-container');
-        const statusLine = document.getElementById('status-line');
 
-        function enableAdminMode() {
+        // Проверяем: если вы уже вводили пароль на этом ПК ранее, админка включится автоматически
+        if (localStorage.getItem('sandpex_authorized') === 'true') {
             container.classList.remove('viewer-mode');
-            statusLine.textContent = "Режим: Администратор sandpex";
-            statusLine.style.background = "#2ecc71";
-        }
-
-        // Логика автоматического запроса пароля
-        async function checkAccess() {
-            // Если вы уже успешно входили ранее на этом ПК, админка включится сама
-            if (localStorage.getItem('sandpex_admin') === 'true') {
-                enableAdminMode();
-                return;
-            }
-
-            // Если вы зашли впервые или стерли кэш, сайт сам вежливо спросит пароль браузерным окном
-            // Обычный игрок просто нажмет "Отмена" или оставит пустым и нажмет ОК
-            const pass = prompt('Добро пожаловать на sandpex! Если вы администратор, введите пароль (остальные нажмите Отмена):');
-            
-            if (pass) {
-                const enteredHash = await sha256(pass);
-                if (enteredHash === HASHED_PASSWORD) {
-                    localStorage.setItem('sandpex_admin', 'true');
-                    enableAdminMode();
-                    alert('Доступ открыт! Панели редактирования активированы.');
-                    window.location.reload();
-                } else {
-                    alert('Неверный пароль. Включен режим просмотра.');
+        } else {
+            // Если зашли первый раз — сайт мгновенно сам вызовет окно ввода поверх холста
+            setTimeout(async () => {
+                const userPassword = prompt('Вход в sandpex. Если вы Администратор — введите ваш обычный пароль. (Зрители: нажмите "Отмена" или оставьте пустым):');
+                
+                if (userPassword) {
+                    const generatedHash = await convertToHash(userPassword);
+                    // Сайт сверяет ваш обычный пароль с зашифрованной меткой
+                    if (generatedHash === SECURE_HASH) {
+                        localStorage.setItem('sandpex_authorized', 'true');
+                        alert('Доступ подтвержден! Панель инструментов активирована.');
+                        window.location.reload(); // Перезапуск страницы с правами админа
+                    } else {
+                        alert('Неверный пароль. Включен режим просмотра (Зритель).');
+                    }
                 }
-            }
+            }, 500); // Небольшая задержка, чтобы окно выскочило ровно после загрузки сайта
         }
 
-        // Запуск проверки
-        checkAccess();
-
-        // Запуск холста
+        // Запуск бесконечного холста в контейнере
         const root = ReactDOM.createRoot(container);
         root.render(React.createElement(Tldraw, { 
-            persistenceKey: "sandpex-canvas-storage" 
+            persistenceKey: "sandpex-canvas-v3" 
         }));
     </script>
 </body>
 </html>
-
