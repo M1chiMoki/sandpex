@@ -18,7 +18,7 @@
 </head>
 <body>
 
-    <div id="mode-indicator">sandpex | Режим: Просмотр (Для админа: Ctrl + Shift + L)</div>
+    <div id="mode-indicator">sandpex | Режим: Просмотр (Для админа: Ctrl + Q)</div>
     <div id="canvas-container" class="viewer-mode"></div>
 
     <script type="module">
@@ -42,8 +42,10 @@
             enableAdminMode();
         }
 
+        // БЕЗОПАСНАЯ КОМБИНАЦИЯ КЛАВИШ: Ctrl + Q
         window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyL') {
+            if (e.ctrlKey && e.code === 'KeyQ') {
+                e.preventDefault(); // Запрещаем браузеру делать свои действия
                 const pass = prompt('Введите пароль для sandpex:');
                 if (pass === ADMIN_PASSWORD) {
                     localStorage.setItem('sandpex_admin', 'true');
