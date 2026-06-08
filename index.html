@@ -22,7 +22,6 @@
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
         
-        /* Исправление: Булавка полностью ПРЯЧЕТСЯ и показывается ТОЛЬКО админу */
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
         
@@ -104,7 +103,8 @@
             if (!isTargetAdmin || e.target !== viewport) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
             if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
-            players.push({ id: Date.now(), name: n, x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom, color: "#000000", description: "", pinned: false, scale: 1 });
+            // Изначальный слой изменен на layer: 1
+            players.push({ id: Date.now(), name: n, x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
             renderPlayers();
         });
 
@@ -120,10 +120,11 @@
                 modalBox.innerHTML += "<button id='edit-desc-btn' style='background:#2f80ed;margin-bottom:5px;'>Изменить описание</button>";
                 modalBox.innerHTML += "<button id='edit-color-btn' style='background:#e67e22;margin-bottom:5px;'>Изменить цвет текста</button>";
                 modalBox.innerHTML += "<button id='edit-scale-btn' style='background:#9b59b6;margin-bottom:5px;'>Изменить масштаб текста (" + (p.scale || 1) + ")</button>";
+                modalBox.innerHTML += "<button id='edit-layer-btn' style='background:#1abc9c;margin-bottom:5px;'>Изменить слой текста (" + (p.layer !== undefined ? p.layer : 1) + ")</button>";
                 const pinTxt = p.pinned ? "Открепить ник" : "Закрепить ник";
                 modalBox.innerHTML += "<button id='toggle-pin-btn' style='background:#d35400;margin-bottom:10px;'>" + pinTxt + "</button>";
                 modalBox.innerHTML += "<strong>Данные из players.json:</strong>";
-                const rawInfo = { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), color: p.color || "#000000", description: p.description || "", pinned: !!p.pinned, scale: p.scale || 1 };
+                const rawInfo = { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), color: p.color || "#000000", description: p.description || "", pinned: !!p.pinned, scale: p.scale || 1, layer: p.layer !== undefined ? p.layer : 1 };
                 modalBox.innerHTML += "<pre>" + JSON.stringify(rawInfo, null, 2) + "</pre>";
             }
 
@@ -145,6 +146,10 @@
                     const newScale = prompt("Масштаб текста (например: 1, 1.5, 0.5):", p.scale || 1);
                     if (newScale !== null && !isNaN(newScale) && Number(newScale) > 0) { p.scale = Number(newScale); renderPlayers(); infoModal.style.display = "none"; }
                 });
+                document.getElementById('edit-layer-btn').addEventListener('click', () => {
+                    const newLayer = prompt("Введите номер слоя (целое число, например: 1, 2, 0):", p.layer !== undefined ? p.layer : 1);
+                    if (newLayer !== null && !isNaN(newLayer)) { p.layer = parseInt(newLayer, 10); renderPlayers(); infoModal.style.display = "none"; }
+                });
                 document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; });
             }
         }
@@ -158,6 +163,9 @@
                 t.style.left = p.x + "px"; t.style.top = p.y + "px";
                 t.style.color = p.color || "#000000";
                 t.style.fontSize = (16 * (p.scale || 1)) + "px";
+                
+                // Дефолтный слой 1, если параметр не задан в базе
+                t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
                     t.style.fontWeight = "900";
