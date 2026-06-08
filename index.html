@@ -106,7 +106,7 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Управление мышкой (ПК)
+        // Движение карты мышкой (ПК)
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0) return;
             if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
@@ -116,7 +116,7 @@
         window.addEventListener("mousemove", e => { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
         window.addEventListener("mouseup", () => isPanning = false);
         
-        // Исправлено: Карта на смартфонах теперь летает без ошибок
+        // Исправлено: Движение карты пальцами (Смартфоны)
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (e.touches.length === 1) {
@@ -155,7 +155,7 @@
             updateTransform();
         }, { passive: true });
 
-        // Исправлено: Браузер больше не выделяет текст, ник создается ровно под мышкой
+        // Исправлено: Двойной клик на холсте
         viewport.addEventListener("dblclick", e => {
             e.preventDefault();
             if (!isTargetAdmin || e.target !== viewport) return;
