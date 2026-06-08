@@ -9,24 +9,58 @@
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; }
         #canvas-container { width: 100%; height: 100%; }
         
-        /* Прячем инструменты, если пользователь не админ */
+        /* Скрытие панелей для обычных зрителей */
         .viewer-mode .tl-toolbar, 
         .viewer-mode .tl-sidebar, 
         .viewer-mode .tl-context-menu { display: none !important; }
         
-        /* Кнопка входа для вас */
+        /* Кнопка входа */
         #admin-btn {
             position: fixed; top: 15px; right: 15px; z-index: 99999;
             background: #34495e; color: white; border: none;
-            padding: 8px 16px; border-radius: 4px; font-weight: bold;
-            cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 10px 20px; border-radius: 4px; font-weight: bold;
+            cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         #admin-btn.logged-in { background: #2ecc71; cursor: default; }
+
+        /* Красивое встроенное окно для ввода пароля */
+        #login-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 999999; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 8px; width: 300px;
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-top: 0; color: #333; }
+        .modal-content input {
+            width: 90%; padding: 10px; margin: 15px 0;
+            border: 1px solid #ccc; border-radius: 4px; font-size: 16px;
+        }
+        .modal-content button {
+            padding: 10px 20px; border: none; border-radius: 4px;
+            cursor: pointer; font-weight: bold; font-size: 14px; margin: 5px;
+        }
+        .submit-btn { background: #2ecc71; color: white; }
+        .cancel-btn { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
 
     <button id="admin-btn">Войти как Админ</button>
+
+    <!-- Окно ввода пароля -->
+    <div id="login-modal">
+        <div class="modal-content">
+            <h3>Вход в sandpex</h3>
+            <input type="password" id="pass-input" placeholder="Введите пароль">
+            <div>
+                <button class="submit-btn" id="submit-pass">Войти</button>
+                <button class="cancel-btn" id="close-modal">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <div id="canvas-container" class="viewer-mode"></div>
 
     <script type="module">
@@ -37,31 +71,50 @@
         const ADMIN_PASSWORD = 'sandpex2019wh'; 
         const container = document.getElementById('canvas-container');
         const btn = document.getElementById('admin-btn');
+        const modal = document.getElementById('login-modal');
+        const passInput = document.getElementById('pass-input');
 
-        // Функция активации админки
         function enableAdminMode() {
             container.classList.remove('viewer-mode');
             btn.textContent = "Режим: Администратор";
             btn.classList.add('logged-in');
         }
 
-        // Проверяем, залогинены ли вы уже
         if (localStorage.getItem('sandpex_admin') === 'true') {
             enableAdminMode();
         }
 
-        // Нажатие на кнопку
+        // Открытие окна по клику
         btn.addEventListener('click', () => {
             if (localStorage.getItem('sandpex_admin') === 'true') return;
+            modal.style.display = 'flex';
+            passInput.focus();
+        });
 
-            const pass = prompt('Введите пароль для sandpex:');
-            if (pass === ADMIN_PASSWORD) {
+        // Закрытие окна
+        document.getElementById('close-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+            passInput.value = '';
+        });
+
+        // Проверка пароля
+        document.getElementById('submit-pass').addEventListener('click', () => {
+            if (passInput.value === ADMIN_PASSWORD) {
                 localStorage.setItem('sandpex_admin', 'true');
                 enableAdminMode();
-                alert('Доступ открыт! Панель инструментов появилась.');
-                window.location.reload(); // Перезагрузка для активации панелей
-            } else if (pass !== null) {
+                modal.style.display = 'none';
+                alert('Доступ открыт!');
+                window.location.reload();
+            } else {
                 alert('Неверный пароль!');
+                passInput.value = '';
+            }
+        });
+
+        // Вход по нажатию Enter в поле ввода
+        passInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('submit-pass').click();
             }
         });
 
