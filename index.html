@@ -1,174 +1,27 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sandpex — Бесконечный холст</title>
-    <style>
-        * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #1e1e24; color: #fff; }
-        
-        #admin-btn {
-            position: fixed; top: 15px; right: 15px; z-index: 99999;
-            background: #34495e; color: white; border: none; padding: 10px 20px;
-            border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
-        }
-        #admin-btn:hover { background: #2c3e50; transform: scale(1.02); }
-        #admin-btn.logged-in { background: #2ecc71; cursor: default; }
-
-        #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; }
-        #viewport:active { cursor: grabbing; }
-        #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; }
-
-        .player-tag {
-            position: absolute; background: rgba(255,255,255,0.1); border: 2px solid #5865F2;
-            padding: 8px 16px; border-radius: 4px; font-size: 16px; font-weight: bold;
-            white-space: nowrap; user-select: none; color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .admin-mode .player-tag { cursor: move; border-color: #2ecc71; }
-        .admin-mode .player-tag::after { content: ' ✕'; color: #e74c3c; cursor: pointer; margin-left: 10px; font-size: 12px; }
-
-        #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 20px; font-size: 13px; pointer-events: none; z-index: 999; }
-    </style>
-</head>
-<body>
-
-    <button id="admin-btn">Войти как Админ</button>
-    <div id="nav-tip">Перетаскивание карты мышкой | Колёсико — масштаб | Создание ника: двойной клик (только для Админа)</div>
-
-    <div id="viewport">
-        <div id="canvas"></div>
-    </div>
-
-    <script>
-        // Безопасность: Маскируем ваш пароль "sandpex2019wh", разбивая его на части.
-        // В консоли браузера поиске целое слово найти не получится.
-        const p1 = "sand"; const p2 = "pex"; const p3 = "2019"; const p4 = "wh";
-        const SECRET_KEY = p1 + p2 + p3 + p4; 
-
-        const viewport = document.getElementById('viewport');
-        const canvas = document.getElementById('canvas');
-        const adminBtn = document.getElementById('admin-btn');
-
-        let isTargetAdmin = localStorage.getItem('sandpex_is_admin') === 'true';
-        let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
-        let isPanning = false, startX, startY;
-        let players = JSON.parse(localStorage.getItem('sandpex_players') || '[]');
-
-        function updateTransform() {
-            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-        }
-
-        if (isTargetAdmin) {
-            document.body.classList.add('admin-mode');
-            adminBtn.textContent = "Режим: Администратор";
-            adminBtn.classList.add('logged-in');
-        }
-
-        // Прямая надежная проверка пароля, которая сработает везде
-        adminBtn.addEventListener('click', () => {
-            if (isTargetAdmin) return;
-            const pass = prompt('Введите пароль администратора для sandpex:');
-            if (pass === SECRET_KEY) {
-                localStorage.setItem('sandpex_is_admin', 'true');
-                alert('Доступ разрешен! Двойной клик по холсту создаст ник.');
-                window.location.reload();
-            } else if (pass !== null) {
-                alert('Неверный пароль!');
-            }
-        });
-
-        viewport.addEventListener('mousedown', (e) => {
-            if (e.target !== viewport && !e.target.classList.contains('player-tag')) return;
-            if (e.target.classList.contains('player-tag') && isTargetAdmin) return; 
-            isPanning = true;
-            startX = e.clientX - panX;
-            startY = e.clientY - panY;
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (isPanning) {
-                panX = e.clientX - startX;
-                panY = e.clientY - startY;
-                updateTransform();
-            }
-        });
-
-        window.addEventListener('mouseup', () => isPanning = false);
-
-        // Масштабирование
-        window.addEventListener('wheel', (e) => {
-            const zoomFactor = 1.1;
-            if (e.deltaY < 0) {
-                if (zoom < 20) zoom *= zoomFactor;
-            } else {
-                if (zoom > 0.02) zoom /= zoomFactor;
-            }
-            updateTransform();
-        }, { passive: true });
-
-        // Создание ника по ДВОЙНОМУ КЛИКУ на пустом месте (Только для Админа)
-        viewport.addEventListener('dblclick', (e) => {
-            if (!isTargetAdmin || e.target !== viewport) return;
-            const name = prompt('Введите ник игрока:');
-            if (!name) return;
-
-            const x = (e.clientX - panX) / zoom;
-            const y = (e.clientY - panY) / zoom;
-
-            const id = Date.now();
-            players.push({ id, name, x, y });
-            saveAndRender();
-        });
-
-        function saveAndRender() {
-            localStorage.setItem('sandpex_players', JSON.stringify(players));
-            canvas.innerHTML = '';
-            players.forEach(p => {
-                const tag = document.createElement('div');
-                tag.className = 'player-tag';
-                tag.textContent = p.name;
-                tag.style.left = `${p.x}px`;
-                tag.style.top = `${p.y}px`;
-
-                // Удаление на крестик
-                tag.addEventListener('click', (e) => {
-                    if (isTargetAdmin && e.clientX > tag.getBoundingClientRect().right - 25) {
-                        players = players.filter(pl => pl.id !== p.id);
-                        saveAndRender();
-                    }
-                });
-
-                // Перетаскивание
-                if (isTargetAdmin) {
-                    let isDraggingTag = false;
-                    tag.addEventListener('mousedown', (e) => {
-                        e.stopPropagation();
-                        isDraggingTag = true;
-                    });
-                    window.addEventListener('mousemove', (e) => {
-                        if (isDraggingTag) {
-                            p.x = (e.clientX - panX) / zoom;
-                            p.y = (e.clientY - panY) / zoom;
-                            tag.style.left = `${p.x}px`;
-                            tag.style.top = `${p.y}px`;
-                        }
-                    });
-                    window.addEventListener('mouseup', () => {
-                        if (isDraggingTag) {
-                            isDraggingTag = false;
-                            localStorage.setItem('sandpex_players', JSON.stringify(players));
-                        }
-                    });
-                }
-
-                canvas.appendChild(tag);
-            });
-        }
-
-        updateTransform();
-        saveAndRender();
-    </script>
-</body>
-</html>
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>sandpex — Карта ников</title><style>
+*{box-sizing:border-box;}body,html{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;font-family:sans-serif;background:#fff;color:#000;}
+#ui-container{position:fixed;top:15px;width:100%;display:flex;justify-content:space-between;padding:0 20px;z-index:99999;pointer-events:none;}
+.ui-element{pointer-events:auto;}#search-box{padding:10px 15px;width:250px;border:2px solid #000;border-radius:6px;font-size:14px;outline:none;background:#fff;color:#000;box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+#admin-btn,#save-btn{background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;box-shadow:0 4px 10px rgba(0,0,0,0.1);transition:0.2s;margin-left:10px;}
+#admin-btn:hover,#save-btn:hover{background:#333;}#admin-btn.logged-in{background:#2ecc71;color:#fff;cursor:default;}#save-btn{display:none;background:#2f80ed;color:#fff;}
+#viewport{width:100%;height:100%;position:absolute;top:0;left:0;cursor:grab;}#viewport:active{cursor:grabbing;}#canvas{position:absolute;top:0;left:0;width:1px;height:1px;transform-origin:0 0;}
+.player-tag{position:absolute;font-size:16px;font-weight:bold;white-space:nowrap;user-select:none;color:#000;}
+.admin-mode .player-tag{cursor:move;}.player-delete-btn{display:none;color:#e74c3c;cursor:pointer;margin-left:6px;font-size:14px;font-weight:bold;}.admin-mode .player-delete-btn{display:inline-block;}
+#nav-tip{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.05);color:#000;padding:6px 16px;border-radius:20px;font-size:12px;pointer-events:none;z-index:999;}
+</style></head><body><div id="ui-container"><div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник на карте..."><div class="ui-element"><button id="save-btn">Сохранить изменения</button><button id="admin-btn">Войти как Admin</button></div></div><div id="nav-tip">Перетаскивание карты мышкой | Колёсико — зум | Двойной клик — создать ник (для Админа)</div><div id="viewport"><div id="canvas"></div></div><script>
+const GH_USER="M1chiMoki",GH_REPO="sandpex",SECRET_KEY="sandpex2019wh";
+const viewport=document.getElementById("viewport"),canvas=document.getElementById("canvas"),adminBtn=document.getElementById("admin-btn"),saveBtn=document.getElementById("save-btn"),searchBox=document.getElementById("search-box");
+let isTargetAdmin=localStorage.getItem("sandpex_is_admin")==="true",panX=window.innerWidth/2,panY=window.innerHeight/2,zoom=1,isPanning=false,startX,startY,players=[],fileSha="";
+function updateTransform(){canvas.style.transform="translate("+panX+"px,"+panY+"px) scale("+zoom+")";}
+if(isTargetAdmin){document.body.classList.add("admin-mode");adminBtn.textContent="Режим: Администратор";adminBtn.classList.add("logged-in");saveBtn.style.display="inline-block";}
+adminBtn.addEventListener("click",()=>{if(isTargetAdmin)return;const p=prompt("Введите пароль администратора для sandpex:");if(p===SECRET_KEY){localStorage.setItem("sandpex_is_admin","true");alert("Доступ разрешен!");window.location.reload();}else if(p!==null){alert("Неверный пароль!");}});
+async function loadPlayersFromServer(){try{const r=await fetch("https://github.com"+GH_USER+"/"+GH_REPO+"/contents/players.json",{headers:{"Cache-Control":"no-cache"}});if(r.status===200){const d=await r.json();fileSha=d.sha;players=JSON.parse(decodeURIComponent(escape(atob(d.content))));renderPlayers();}}catch(e){console.error(e);}}
+saveBtn.addEventListener("click",async()=>{if(!isTargetAdmin)return;let t=localStorage.getItem("sandpex_gh_token");if(!t){t=prompt("Введите ваш GitHub токен (ghp_...):");if(!t)return;localStorage.setItem("sandpex_gh_token",t);}saveBtn.textContent="Сохранение...";saveBtn.disabled=true;const b=btoa(unescape(encodeURIComponent(JSON.stringify(players)))),body={message:"Обновление карты ников",content:b};if(fileSha)body.sha=fileSha;try{const r=await fetch("https://github.com"+GH_USER+"/"+GH_REPO+"/contents/players.json",{method:"PUT",headers:{"Authorization":"token "+t,"Content-Type":"application/json"},body:JSON.stringify(body)});if(r.ok){const d=await r.json();fileSha=d.content.sha;alert("Успешно сохранено!");}else{alert("Ошибка. Неверный токен.");localStorage.removeItem("sandpex_gh_token");}}catch(e){alert("Ошибка сети.");}finally{saveBtn.textContent="Сохранить изменения";saveBtn.disabled=false;}});
+searchBox.addEventListener("input",()=>{const q=searchBox.value.trim().toLowerCase();if(!q)return;const f=players.find(p=>p.name.toLowerCase().includes(q));if(f){zoom=1.5;panX=window.innerWidth/2-f.x*zoom;panY=window.innerHeight/2-f.y*zoom;updateTransform();}});
+viewport.addEventListener("mousedown",e=>{if(e.target!==viewport&&!e.target.classList.contains("player-tag")&&!e.target.parentNode.classList.contains("player-tag"))return;if((e.target.classList.contains("player-tag")||e.target.parentNode.classList.contains("player-tag"))&&isTargetAdmin)return;isPanning=true;startX=e.clientX-panX;startY=e.clientY-panY;});
+window.addEventListener("mousemove",e=>{if(isPanning){panX=e.clientX-startX;panY=e.clientY-startY;updateTransform();}});window.addEventListener("mouseup",()=>isPanning=false);
+window.addEventListener("wheel",e=>{const f=1.1;if(e.deltaY<0){if(zoom<30)zoom*=f;}else{if(zoom>0.01)zoom/=f;}updateTransform();},{passive:true});
+viewport.addEventListener("dblclick",e=>{if(!isTargetAdmin||e.target!==viewport)return;const n=prompt("Введите ник игрока:");if(!n)return;players.push({id:Date.now(),name:n,x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom});renderPlayers();});
+function renderPlayers(){canvas.innerHTML="";players.forEach(p=>{const t=document.createElement("div");t.className="player-tag";const s=document.createElement("span");s.textContent=p.name;t.appendChild(s);const d=document.createElement("span");d.className="player-delete-btn";d.textContent="  ×";t.appendChild(d);t.style.left=p.x+"px";t.style.top=p.y+"px";d.addEventListener("click",e=>{e.stopPropagation();players=players.filter(pl=>pl.id!==p.id);renderPlayers();});if(isTargetAdmin){let drag=false;t.addEventListener("mousedown",e=>{if(e.target===d)return;e.stopPropagation();drag=true;});window.addEventListener("mousemove",e=>{if(drag){p.x=(e.clientX-panX)/zoom;p.y=(e.clientY-panY)/zoom;t.style.left=p.x+"px";t.style.top=p.y+"px";}});window.addEventListener("mouseup",()=>{if(drag)drag=false;});}canvas.appendChild(t);});}
+updateTransform();loadPlayersFromServer();
+</script></body></html>
