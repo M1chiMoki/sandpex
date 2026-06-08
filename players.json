@@ -6,6 +6,139 @@
     "y": 0,
     "description": "Первоначальный основатель проекта SandPex, и по праву являющийся первым игроком проекта.",
     "color": "#850000",
-    "scale": 2.2
+    "scale": 2.2,
+    "pinned": true
+  },
+  {
+    "id": 1780936073941,
+    "name": "topcaper",
+    "x": 0,
+    "y": 43.22289956881681,
+    "color": "red",
+    "description": "",
+    "pinned": true,
+    "scale": 2,
+    "layer": 1
+  },
+  {
+    "id": 1780936118842,
+    "name": "MrSmaylik",
+    "x": 0,
+    "y": -43.222900390625,
+    "color": "red",
+    "description": "",
+    "pinned": true,
+    "scale": 2,
+    "layer": 1
+  },
+  {
+    "id": 1780936167184,
+    "name": "Mokinas48888",
+    "x": 274.9719468509382,
+    "y": 0,
+    "color": "red",
+    "description": "",
+    "pinned": true,
+    "scale": 2,
+    "layer": 1
+  },
+  {
+    "id": 1780936230429,
+    "name": "HORvard",
+    "x": 274.9719468509382,
+    "y": -43.222900390625,
+    "color": "blue",
+    "description": "",
+    "pinned": true,
+    "scale": 1.5,
+    "layer": 1
+  },
+  {
+    "id": 1780936270899,
+    "name": "Mr_voloda14",
+    "x": 274.9719468509382,
+    "y": 43.22289956881681,
+    "color": "blue",
+    "description": "",
+    "pinned": true,
+    "scale": 1.5,
+    "layer": 1
+  },
+  {
+    "id": 1780936500706,
+    "name": "LeonV1",
+    "x": -39800.26259674746,
+    "y": -8742.646218181504,
+    "color": "#000000",
+    "description": "",
+    "pinned": false,
+    "scale": 1,
+    "layer": 1
+  },
+  {
+    "id": 1780936674787,
+    "name": "Kora",
+    "x": -485.5688635002525,
+    "y": -2645.0250006649903,
+    "color": "#000000",
+    "description": "",
+    "pinned": true,
+    "scale": 1,
+    "layer": 1
+  },
+  {
+    "id": 1780936707382,
+    "name": "kakashka000",
+    "x": 1180.7461201004796,
+    "y": -2645.0250006649903,
+    "color": "#000000",
+    "description": "",
+    "pinned": true,
+    "scale": 1,
+    "layer": 1
+  },
+  {
+    "id": 1780936800674,
+    "name": "Niko__Las",
+    "x": -485.5688635002525,
+    "y": 3034.1529814055307,
+    "color": "#000000",
+    "description": "",
+    "pinned": true,
+    "scale": 1,
+    "layer": 1
+  },
+  {
+    "id": 1780936819841,
+    "name": "a",
+    "x": 1180.7461201004796,
+    "y": 3034.1529814055307,
+    "color": "#000000",
+    "description": "",
+    "pinned": false,
+    "scale": 1,
+    "layer": 1
+  },
+  {
+    "id": 1780936895898,
+    "name": "111",
+    "x": 3010.956081969997,
+    "y": 337.9104724956978,
+    "color": "#000000",
+    "description": "",
+    "pinned": true,
+    "scale": 1,
+    "layer": 1
+  },
+  {
+    "id": 1780936931462,
+    "name": "1123",
+    "x": 4732.124200926889,
+    "y": 337.9104724956978,
+    "color": "#000000",
+    "description": "",
+    "pinned": false,
+    "scale": 1,
+    "layer": 1
   }
 ]
