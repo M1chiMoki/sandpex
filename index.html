@@ -9,14 +9,25 @@
 .admin-mode .player-tag{cursor:move;}.player-delete-btn{display:none;color:#e74c3c;cursor:pointer;margin-left:6px;font-size:14px;font-weight:bold;}.admin-mode .player-delete-btn{display:inline-block;}
 #nav-tip{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.05);color:#000;padding:6px 16px;border-radius:20px;font-size:12px;pointer-events:none;z-index:999;}
 </style></head><body><div id="ui-container"><div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник на карте..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div></div><div id="nav-tip">Перетаскивание карты мышкой | Колёсико — зум | Двойной клик — создать ник (для Админа)</div><div id="viewport"><div id="canvas"></div></div><script>
-const GH_USER="M1chiMoki",GH_REPO="sandpex",SECRET_KEY="sandpex2019wh";
+const SECRET_KEY="sandpex2019wh";
 const viewport=document.getElementById("viewport"),canvas=document.getElementById("canvas"),adminBtn=document.getElementById("admin-btn"),saveBtn=document.getElementById("save-btn"),searchBox=document.getElementById("search-box");
 let isTargetAdmin=localStorage.getItem("sandpex_is_admin")==="true",panX=window.innerWidth/2,panY=window.innerHeight/2,zoom=1,isPanning=false,startX,startY,players=[];
 function updateTransform(){canvas.style.transform="translate("+panX+"px,"+panY+"px) scale("+zoom+")";}
 if(isTargetAdmin){document.body.classList.add("admin-mode");adminBtn.textContent="Режим: Администратор";adminBtn.classList.add("logged-in");saveBtn.style.display="inline-block";}
 adminBtn.addEventListener("click",()=>{if(isTargetAdmin)return;const p=prompt("Введите пароль администратора для sandpex:");if(p===SECRET_KEY){localStorage.setItem("sandpex_is_admin","true");alert("Доступ разрешен!");window.location.reload();}else if(p!==null){alert("Неверный пароль!");}});
 
-async function loadPlayersFromServer(){try{const r=await fetch("https://githubusercontent.com"+GH_USER+"/"+GH_REPO+"/main/players.json",{cache:"no-store"});if(r.ok){players=await r.json();renderPlayers();}}catch(e){console.log("Ожидание файла players.json в репозитории.");}}
+// Исправлено: Загружаем локальный файл прямо из папки сайта с защитой от кэша
+async function loadPlayersFromServer(){
+    try{
+        const r=await fetch("players.json?t="+Date.now(),{cache:"no-store"});
+        if(r.ok){
+            players=await r.json();
+            renderPlayers();
+        }
+    }catch(e){
+        console.log("Ошибка чтения файла базы.");
+    }
+}
 
 saveBtn.addEventListener("click",()=>{if(!isTargetAdmin)return;const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(players,null,2));const downloadAnchor=document.createElement('a');downloadAnchor.setAttribute("href",dataStr);downloadAnchor.setAttribute("download","players.json");document.body.appendChild(downloadAnchor);downloadAnchor.click();downloadAnchor.remove();alert("Файл 'players.json' успешно скачан! Загрузите его в свой репозиторий sandpex на GitHub через кнопку 'Add file -> Upload files'.");});
 
