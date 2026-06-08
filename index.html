@@ -3,70 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sandpex — Карта ников</title>
-    <!-- Официальные стили бесконечного холста -->
-    <link rel="stylesheet" href="https://unpkg.com">
+    <title>sandpex — Бесконечный холст</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #1e1e24; color: #fff; }
         
-        /* Жесткое скрытие всех панелей создания для обычных игроков (режим просмотра) */
-        .viewer-mode .tl-toolbar, 
-        .viewer-mode .tl-sidebar, 
-        .viewer-mode .tl-context-menu { display: none !important; }
+        /* Кнопка админа в верхнем слое */
+        #admin-btn {
+            position: fixed; top: 15px; right: 15px; z-index: 99999;
+            background: #34495e; color: white; border: none; padding: 10px 20px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
+        }
+        #admin-btn:hover { background: #2c3e50; transform: scale(1.02); }
+        #admin-btn.logged-in { background: #2ecc71; cursor: default; }
+
+        /* Бесконечное пространство для перемещения */
+        #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; }
+        #viewport:active { cursor: grabbing; }
+        #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; }
+
+        /* Стиль для плашки с ником игрока */
+        .player-tag {
+            position: absolute; background: rgba(255,255,255,0.1); border: 2px solid #5865F2;
+            padding: 8px 16px; border-radius: 4px; font-size: 16px; font-weight: bold;
+            white-space: nowrap; user-select: none; color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .admin-mode .player-tag { cursor: move; border-color: #2ecc71; }
+        .admin-mode .player-tag::after { content: ' ✕'; color: #e74c3c; cursor: pointer; margin-left: 10px; font-size: 12px; }
+
+        /* Подсказка снизу */
+        #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 20px; font-size: 13px; pointer-events: none; z-index: 999; }
     </style>
 </head>
 <body>
 
-    <!-- Контейнер для нашего бесконечного холста -->
-    <div id="canvas-container" class="viewer-mode"></div>
+    <button id="admin-btn">Войти как Админ</button>
+    <div id="nav-tip">Зажмите мышь для перемещения карты | Колёсико — масштаб</div>
 
-    <script type="module">
-        import { Tldraw } from 'https://unpkg.com'
-        import React from 'https://esm.sh'
-        import ReactDOM from 'https://esm.sh'
+    <div id="viewport">
+        <div id="canvas"></div>
+    </div>
 
-        // Безопасность: Криптографический хэш от вашего пароля "sandpex2019wh". 
-        // Сам пароль в чистом виде в коде не хранится, его никто не взломает в консоли!
+    <script>
+        // Безопасность: Хэш вашего пароля "sandpex2019wh"
         const SECURE_HASH = "300302b1fec3b5bdf446e5ca91d31fa4a2ee6f4ccbe89a774618e47209930f7b"; 
 
-        // Функция автоматического шифрования (работает под капотом, вы вводите обычный текст)
-        async function convertToHash(text) {
-            const msgBuffer = new TextEncoder().encode(text);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        async function checkPass(text) {
+            const buffer = new TextEncoder().encode(text);
+            const hash = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        const container = document.getElementById('canvas-container');
+        const viewport = document.getElementById('viewport');
+        const canvas = document.getElementById('canvas');
+        const adminBtn = document.getElementById('admin-btn');
 
-        // Проверяем: если вы уже вводили пароль на этом ПК ранее, админка включится автоматически
-        if (localStorage.getItem('sandpex_authorized') === 'true') {
-            container.classList.remove('viewer-mode');
-        } else {
-            // Если зашли первый раз — сайт мгновенно сам вызовет окно ввода поверх холста
-            setTimeout(async () => {
-                const userPassword = prompt('Вход в sandpex. Если вы Администратор — введите ваш обычный пароль. (Зрители: нажмите "Отмена" или оставьте пустым):');
-                
-                if (userPassword) {
-                    const generatedHash = await convertToHash(userPassword);
-                    // Сайт сверяет ваш обычный пароль с зашифрованной меткой
-                    if (generatedHash === SECURE_HASH) {
-                        localStorage.setItem('sandpex_authorized', 'true');
-                        alert('Доступ подтвержден! Панель инструментов активирована.');
-                        window.location.reload(); // Перезапуск страницы с правами админа
-                    } else {
-                        alert('Неверный пароль. Включен режим просмотра (Зритель).');
-                    }
+        let isTargetAdmin = localStorage.getItem('sandpex_is_admin') === 'true';
+        let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
+        let isPanning = false, startX, startY;
+        let players = JSON.parse(localStorage.getItem('sandpex_players') || '[]');
+
+        function updateTransform() {
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+        }
+
+        if (isTargetAdmin) {
+            document.body.classList.add('admin-mode');
+            adminBtn.textContent = "Режим: Администратор";
+            adminBtn.classList.add('logged-in');
+        }
+
+        // Логика кнопки "Войти как Админ"
+        adminBtn.addEventListener('click', async () => {
+            if (isTargetAdmin) return;
+            const pass = prompt('Введите пароль администратора для sandpex:');
+            if (pass) {
+                const hashed = await checkPass(pass);
+                if (hashed === SECURE_HASH) {
+                    localStorage.setItem('sandpex_is_admin', 'true');
+                    alert('Доступ разрешен!');
+                    window.location.reload();
+                } else {
+                    alert('Неверный пароль!');
                 }
-            }, 500); // Небольшая задержка, чтобы окно выскочило ровно после загрузки сайта
+            }
+        });
+
+        // Управление перемещением карты (Зажатая левая кнопка)
+        viewport.addEventListener('mousedown', (e) => {
+            if (e.target !== viewport && !e.target.classList.contains('player-tag')) return;
+            if (e.target.classList.contains('player-tag') && isTargetAdmin) return; // Если админ тащит ник
+            isPanning = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                panX = e.clientX - startX;
+                panY = e.clientY - startY;
+                updateTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => isPanning = false);
+
+        // Управление масштабом (Колесико мыши)
+        window.addEventListener('wheel', (e) => {
+            const zoomFactor = 1.1;
+            const mouseX = e.clientX - panX;
+            const mouseY = e.clientY - startY;
+
+            if (e.deltaY < 0) {
+                if (zoom < 15) zoom *= zoomFactor;
+            } else {
+                if (zoom > 0.05) zoom /= zoomFactor;
+            }
+            updateTransform();
+        }, { passive: true });
+
+        // Создание ника (Только для Админа — по двойному клику на пустом месте холста)
+        viewport.addEventListener('dblclick', (e) => {
+            if (!isTargetAdmin || e.target !== viewport) return;
+            const name = prompt('Введите ник игрока:');
+            if (!name) return;
+
+            // Расчет координат на бесконечной сетке с учетом зума
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - panX) / zoom;
+            const y = (e.clientY - panY) / zoom;
+
+            const id = Date.now();
+            players.push({ id, name, x, y });
+            saveAndRender();
+        });
+
+        function saveAndRender() {
+            localStorage.setItem('sandpex_players', JSON.stringify(players));
+            canvas.innerHTML = '';
+            players.forEach(p => {
+                const tag = document.createElement('div');
+                tag.className = 'player-tag';
+                tag.textContent = p.name;
+                tag.style.left = `${p.x}px`;
+                tag.style.top = `${p.y}px`;
+
+                // Удаление ника по клику на крестик
+                tag.addEventListener('click', (e) => {
+                    if (isTargetAdmin && e.clientX > tag.getBoundingClientRect().right - 25) {
+                        players = players.filter(pl => pl.id !== p.id);
+                        saveAndRender();
+                    }
+                });
+
+                // Перетаскивание ника админом
+                if (isTargetAdmin) {
+                    let isDraggingTag = false;
+                    tag.addEventListener('mousedown', (e) => {
+                        e.stopPropagation();
+                        isDraggingTag = true;
+                    });
+                    window.addEventListener('mousemove', (e) => {
+                        if (isDraggingTag) {
+                            p.x = (e.clientX - panX) / zoom;
+                            p.y = (e.clientY - panY) / zoom;
+                            tag.style.left = `${p.x}px`;
+                            tag.style.top = `${p.y}px`;
+                        }
+                    });
+                    window.addEventListener('mouseup', () => {
+                        if (isDraggingTag) {
+                            isDraggingTag = false;
+                            localStorage.setItem('sandpex_players', JSON.stringify(players));
+                        }
+                    });
+                }
+
+                canvas.appendChild(tag);
+            });
         }
 
-        // Запуск бесконечного холста в контейнере
-        const root = ReactDOM.createRoot(container);
-        root.render(React.createElement(Tldraw, { 
-            persistenceKey: "sandpex-canvas-v3" 
-        }));
+        // Стартовый запуск
+        updateTransform();
+        saveAndRender();
     </script>
 </body>
 </html>
