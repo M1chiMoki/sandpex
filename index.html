@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none !important; -webkit-user-select: none !important; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #ffffff; color: #000000; }
         #ui-container { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; z-index: 99999; pointer-events: none; }
         .ui-element { pointer-events: auto; }
@@ -21,20 +21,26 @@
         
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; }
         #viewport:active { cursor: grabbing; }
-        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* Стабильный холст: Возвращаем оригинальный scale(), но с аппаратным сглаживанием против размытия */
+        #canvas { 
+            position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; 
+            will-change: transform;
+            transform: translate3d(0,0,0);
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
         
         .player-tag { 
             position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
-            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px; transform-origin: left top;
-            backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d;
-            text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; pointer-events: auto;
+            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px;
+            text-rendering: optimizeLegibility; -webkit-font-smoothing: subpixel-antialiased; -moz-osx-font-smoothing: auto;
         }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
-        
         #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
         #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; }
@@ -43,9 +49,9 @@
         .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; }
         .modal-box button { width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
         
-        .guide-line { position: fixed; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
-        #guide-h { width: 100vw; height: 1px; border-top: 1px dashed #2f80ed; left: 0; }
-        #guide-v { width: 1px; height: 100vh; border-left: 1px dashed #2f80ed; top: 0; }
+        .guide-line { position: absolute; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
+        #guide-h { width: 100000px; height: 1px; border-top: 1px dashed #2f80ed; left: -50000px; }
+        #guide-v { width: 1px; height: 100000px; border-left: 1px dashed #2f80ed; top: -50000px; }
         
         #mobile-add-btn { display: none; position: fixed; bottom: 65px; right: 20px; width: 56px; height: 56px; background: #000; color: #fff; border: none; border-radius: 50%; font-size: 28px; font-weight: bold; justify-content: center; align-items: center; cursor: pointer; z-index: 99999; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .admin-mode #mobile-add-btn { display: flex; }
@@ -54,15 +60,11 @@
 </head>
 <body>
     <div id="ui-container">
-        <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
+        <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник на карте..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
     </div>
     <button id="mobile-add-btn">+</button>
     <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Кнопка «+»: Создать ник</div>
-    <div id="viewport"><div id="canvas"></div></div>
-    
-    <div id="guide-h" class="guide-line"></div>
-    <div id="guide-v" class="guide-line"></div>
-    
+    <div id="viewport"><div id="canvas"><div id="guide-h" class="guide-line"></div><div id="guide-v" class="guide-line"></div></div></div>
     <div id="info-modal"><div class="modal-box" id="modal-box"></div></div>
     <script>
         const SECRET_KEY = "sandpex2019wh";
@@ -80,10 +82,7 @@
         let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
         let isPanning = false, startX, startY, players = [];
         
-        let dragActive = false, dragPlayerId = null, dragElement = null;
-        
-        function updateTransform() { renderPlayers(); }
-        
+        function updateTransform() { canvas.style.transform = "translate(" + panX + "px," + panY + "px) scale(" + zoom + ")"; }
         if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
         
         adminBtn.addEventListener("click", () => {
@@ -112,67 +111,37 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        function createNewPlayer(clientX, clientY) {
-            if (!isTargetAdmin) return;
-            const n = prompt("Введите ник игрока:"); if (!n) return;
-            if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
-            const targetX = (clientX - panX) / zoom;
-            const targetY = (clientY - panY) / zoom;
-            players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
-            renderPlayers();
-        }
-
-        // Движение карты мышкой (ПК)
-        let mapHoldTimer;
+        // Движение карты мышкой (ПК): строго по ЛКМ (e.button === 0)
         viewport.addEventListener("mousedown", e => {
-            if (e.button !== 0 || dragActive) return;
-            if (e.target === viewport) {
-                mapHoldTimer = setTimeout(() => { createNewPlayer(e.clientX, e.clientY); isPanning = false; }, 1500);
-            }
+            if (e.button !== 0) return;
+            if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
-
-        window.addEventListener("mousemove", e => { 
-            clearTimeout(mapHoldTimer);
-            if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
-        });
-        window.addEventListener("mouseup", () => { clearTimeout(mapHoldTimer); isPanning = false; });
-
-        window.addEventListener("dblclick", e => {
-            if (!isTargetAdmin || dragActive) return;
-            if (e.target === viewport || e.target.id === "ui-container" || e.target.tagName === "BODY" || e.target.id === "canvas") {
-                e.preventDefault(); createNewPlayer(e.clientX, e.clientY);
-            }
-        });
+        window.addEventListener("mousemove", e => { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
+        window.addEventListener("mouseup", () => isPanning = false);
         
-        // Исправлено: Движение карты пальцами через правильные массивы тачей
+        // Исправлено: Движение карты пальцами (Смартфоны) через правильные тачи [0] и [1]
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
-            if (dragActive) return;
             if (e.touches.length === 1) {
-                isPanning = true; 
-                startX = e.touches[0].clientX - panX; 
-                startY = e.touches[0].clientY - panY;
+                if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
+                isPanning = true; startX = e.touches[0].clientX - panX; startY = e.touches[0].clientY - panY;
             } else if (e.touches.length === 2) {
                 isPanning = false;
                 touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 touchStartZoom = zoom;
             }
         });
-        
         window.addEventListener("touchmove", e => {
             if (isPanning && e.touches.length === 1) {
-                panX = e.touches[0].clientX - startX; 
-                panY = e.touches[0].clientY - startY; 
-                updateTransform();
+                panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
             } else if (e.touches.length === 2) {
                 const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 const factor = dist / touchStartDist; const oldZoom = zoom;
                 zoom = Math.max(0.01, Math.min(30, touchStartZoom * factor));
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                panX = midX - (midX - panX) * (zoom / oldZoom);
-                panY = midY - (midY - panY) * (zoom / oldZoom);
+                panX = midX - (midX - panX) * (zoom / oldZoom); panY = midY - (midY - panY) * (zoom / oldZoom);
                 updateTransform();
             }
         });
@@ -182,10 +151,22 @@
             const oldZoom = zoom; const f = 1.1;
             if (e.deltaY < 0) { if (zoom < 30) zoom *= f; } else { if (zoom > 0.01) zoom /= f; }
             const mouseX = e.clientX; const mouseY = e.clientY;
-            panX = mouseX - (mouseX - panX) * (zoom / oldZoom);
-            panY = mouseY - (mouseY - panY) * (zoom / oldZoom);
+            panX = mouseX - (mouseX - panX) * (zoom / oldZoom); panY = mouseY - (mouseY - panY) * (zoom / oldZoom);
             updateTransform();
         }, { passive: true });
+
+        function createNewPlayer(clientX, clientY) {
+            const n = prompt("Введите ник игрока:"); if (!n) return;
+            if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
+            const targetX = (clientX - panX) / zoom; const targetY = (clientY - panY) / zoom;
+            players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
+            renderPlayers();
+        }
+
+        viewport.addEventListener("dblclick", e => {
+            if (!isTargetAdmin || e.target !== viewport) return;
+            e.preventDefault(); createNewPlayer(e.clientX, e.clientY);
+        });
 
         mobileAddBtn.addEventListener("click", () => {
             if (!isTargetAdmin) return;
@@ -199,7 +180,6 @@
             modalBox.innerHTML = "<h3>Игрок: " + p.name + "</h3>";
             const descText = p.description && p.description.trim() ? p.description : "Описание отсутствует.";
             modalBox.innerHTML += "<p><strong>Описание:</strong><br>" + descText + "</p>";
-
             if (isTargetAdmin) {
                 modalBox.innerHTML += "<button id='edit-desc-btn' style='background:#2f80ed;margin-bottom:5px;'>Изменить описание</button>";
                 modalBox.innerHTML += "<button id='edit-color-btn' style='background:#e67e22;margin-bottom:5px;'>Изменить цвет текста</button>";
@@ -211,12 +191,9 @@
                 const rawInfo = { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), color: p.color || "#000000", description: p.description || "", pinned: !!p.pinned, scale: p.scale || 1, layer: p.layer !== undefined ? p.layer : 1 };
                 modalBox.innerHTML += "<pre>" + JSON.stringify(rawInfo, null, 2) + "</pre>";
             }
-
             modalBox.innerHTML += "<button id='close-modal-btn' style='background:#7f8c8d;'>Закрыть</button>";
             infoModal.style.display = "flex";
-
             document.getElementById('close-modal-btn').addEventListener('click', () => infoModal.style.display = "none");
-            
             if (isTargetAdmin) {
                 document.getElementById('edit-desc-btn').addEventListener('click', () => {
                     const newDesc = prompt("Введите описание для " + p.name + ":", p.description || "");
@@ -227,11 +204,11 @@
                     if (newColor !== null) { p.color = newColor.trim() ? newColor.trim().toLowerCase() : "#000000"; renderPlayers(); infoModal.style.display = "none"; }
                 });
                 document.getElementById('edit-scale-btn').addEventListener('click', () => {
-                    const newScale = prompt("Масштаб текста (например: 1, 1.5, 0.5):", p.scale || 1);
+                    const newScale = prompt("Масштаб текста:", p.scale || 1);
                     if (newScale !== null && !isNaN(newScale) && Number(newScale) > 0) { p.scale = Number(newScale); renderPlayers(); infoModal.style.display = "none"; }
                 });
                 document.getElementById('edit-layer-btn').addEventListener('click', () => {
-                    const newLayer = prompt("Введите номер слоя (целое число, например: 1, 2, 0):", p.layer !== undefined ? p.layer : 1);
+                    const newLayer = prompt("Введите номер слоя:", p.layer !== undefined ? p.layer : 1);
                     if (newLayer !== null && !isNaN(newLayer)) { p.layer = parseInt(newLayer, 10); renderPlayers(); infoModal.style.display = "none"; }
                 });
                 document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; });
@@ -265,7 +242,6 @@
                 
                 let touchTimer;
                 t.addEventListener("touchstart", e => {
-                    if (dragActive) return;
                     touchTimer = setTimeout(() => { showPlayerMenu(p, null); }, 800);
                 });
                 t.addEventListener("touchend", () => clearTimeout(touchTimer));
@@ -274,92 +250,87 @@
                 d.addEventListener("click", e => { e.stopPropagation(); players = players.filter(pl => pl.id !== p.id); renderPlayers(); });
                 
                 if (isTargetAdmin && !p.pinned) {
-                    const onStart = () => {
-                        isPanning = false;
-                        dragActive = true;
-                        dragPlayerId = p.id;
-                        dragElement = t;
+                    let drag = false;
+                    
+                    const startDrag = () => { drag = true; };
+                    const moveDrag = (clientX, clientY) => {
+                        if (drag) {
+                            let targetX = (clientX - panX) / zoom;
+                            let targetY = (clientY - panY) / zoom;
+                            let snapH = false, snapV = false;
+                            
+                            p.x = targetX; p.y = targetY;
+                            t.style.left = targetX + "px"; t.style.top = targetY + "px";
+                            
+                            let currentRect = t.getBoundingClientRect();
+
+                            players.forEach(other => {
+                                if (other.id !== p.id && other.pinned) {
+                                    let otherEl = canvas.querySelector(`[data-id="${other.id}"]`);
+                                    if(!otherEl) return;
+                                    let otherRect = otherEl.getBoundingClientRect();
+
+                                    if (Math.abs(clientY - otherRect.top - otherRect.height/2) < 15) {
+                                        targetY = other.y; snapH = true;
+                                        guideH.style.top = (otherRect.top + otherRect.height/2) + "px";
+                                        guideH.style.display = "block";
+                                    }
+                                    if (Math.abs(clientX - otherRect.left - otherRect.width/2) < 15) {
+                                        targetX = other.x; snapV = true;
+                                        guideV.style.left = (otherRect.left + otherRect.width/2) + "px";
+                                        guideV.style.display = "block";
+                                    }
+
+                                    players.forEach(secondOther => {
+                                        if(secondOther.id !== p.id && secondOther.id !== other.id && secondOther.pinned) {
+                                            let secEl = canvas.querySelector(`[data-id="${secondOther.id}"]`);
+                                            if(!secEl) return;
+                                            let secRect = secEl.getBoundingClientRect();
+
+                                            let standardGapX = Math.abs(otherRect.left - secRect.left);
+                                            if(standardGapX > 10) {
+                                                if(Math.abs(Math.abs(currentRect.left - otherRect.left) - standardGapX) < 15) {
+                                                    targetX = other.x + (otherRect.left - secRect.left) / zoom;
+                                                    snapV = true;
+                                                    guideV.style.left = currentRect.left + "px";
+                                                    guideV.style.display = "block";
+                                                }
+                                            }
+
+                                            let standardGapY = Math.abs(otherRect.top - secRect.top);
+                                            if(standardGapY > 10) {
+                                                if(Math.abs(Math.abs(currentRect.top - otherRect.top) - standardGapY) < 15) {
+                                                    targetY = other.y + (otherRect.top - secRect.top) / zoom;
+                                                    snapH = true;
+                                                    guideH.style.top = currentRect.top + "px";
+                                                    guideH.style.display = "block";
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+
+                            if (!snapH) guideH.style.display = "none";
+                            if (!snapV) guideV.style.display = "none";
+
+                            p.x = targetX; p.y = targetY;
+                            t.style.left = p.x + "px"; t.style.top = p.y + "px";
+                        }
                     };
-                    t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); onStart(); } });
-                    t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); onStart(); } });
+                    const endDrag = () => { if (drag) { drag = false; guideH.style.display = "none"; guideV.style.display = "none"; } };
+
+                    t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); startDrag(); } });
+                    window.addEventListener("mousemove", e => moveDrag(e.clientX, e.clientY));
+                    window.addEventListener("mouseup", endDrag);
+
+                    t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); startDrag(); } });
+                    window.addEventListener("touchmove", e => { if(e.touches.length === 1) moveDrag(e.touches[0].clientX, e.touches[0].clientY); });
+                    window.addEventListener("touchend", endDrag);
                 }
                 canvas.appendChild(t);
             });
         }
-
-        const processDrag = (clientX, clientY) => {
-            if (!dragActive || !dragPlayerId || !dragElement) return;
-            const p = players.find(pl => pl.id === dragPlayerId);
-            if (!p) return;
-
-            let targetX = (clientX - panX) / zoom;
-            let targetY = (clientY - panY) / zoom;
-            let snapH = false, snapV = false;
-            
-            p.x = targetX; p.y = targetY;
-            dragElement.style.left = targetX + "px"; dragElement.style.top = targetY + "px";
-            
-            let currentRect = dragElement.getBoundingClientRect();
-
-            players.forEach(other => {
-                if (other.id !== p.id && other.pinned) {
-                    let otherEl = canvas.querySelector(`[data-id="${other.id}"]`);
-                    if(!otherEl) return;
-                    let otherRect = otherEl.getBoundingClientRect();
-
-                    if (Math.abs(clientY - otherRect.top - otherRect.height/2) < 15) {
-                        targetY = other.y; snapH = true;
-                        guideH.style.top = (otherRect.top + otherRect.height/2) + "px"; guideH.style.display = "block";
-                    }
-                    if (Math.abs(clientX - otherRect.left - otherRect.width/2) < 15) {
-                        targetX = other.x; snapV = true;
-                        guideV.style.left = (otherRect.left + otherRect.width/2) + "px"; guideV.style.display = "block";
-                    }
-
-                    players.forEach(secondOther => {
-                        if(secondOther.id !== p.id && secondOther.id !== other.id && secondOther.pinned) {
-                            let secEl = canvas.querySelector(`[data-id="${secondOther.id}"]`);
-                            if(!secEl) return;
-                            let secRect = secEl.getBoundingClientRect();
-
-                            let standardGapX = Math.abs(otherRect.left - secRect.left);
-                            if(standardGapX > 10) {
-                                if(Math.abs(Math.abs(currentRect.left - otherRect.left) - standardGapX) < 15) {
-                                    targetX = other.x + (otherRect.left - secRect.left) / zoom;
-                                    snapV = true; guideV.style.left = currentRect.left + "px"; guideV.style.display = "block";
-                                }
-                            }
-
-                            let standardGapY = Math.abs(otherRect.top - secRect.top);
-                            if(standardGapY > 10) {
-                                if(Math.abs(Math.abs(currentRect.top - otherRect.top) - standardGapY) < 15) {
-                                    targetY = other.y + (otherRect.top - secRect.top) / zoom;
-                                    snapH = true; guideH.style.top = currentRect.top + "px"; guideH.style.display = "block";
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-
-            if (!snapH) guideH.style.display = "none";
-            if (!snapV) guideV.style.display = "none";
-            p.x = targetX; p.y = targetY;
-            dragElement.style.left = p.x + "px"; dragElement.style.top = p.y + "px";
-        };
-
-        const stopDrag = () => {
-            if (dragActive) {
-                dragActive = false; dragPlayerId = null; dragElement = null;
-                guideH.style.display = "none"; guideV.style.display = "none";
-            }
-        };
-
-        window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
-        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
-        window.addEventListener("mouseup", stopDrag);
-        window.addEventListener("touchend", stopDrag);
-
         updateTransform(); loadPlayersFromServer();
     </script>
 </body>
