@@ -5,11 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        /* Жесткая блокировка любого выделения текста по всему сайту */
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none !important; 
+            -webkit-user-select: none !important; 
+            -moz-user-select: none !important; 
+            -ms-user-select: none !important; 
+        }
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #ffffff; color: #000000; }
         #ui-container { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; z-index: 99999; pointer-events: none; }
         .ui-element { pointer-events: auto; }
         
+        /* Поисковая строка — единственное место, где текст вводить можно */
         #search-box { padding: 10px 12px; width: 140px; border: 2px solid #000000; border-radius: 6px; font-size: 14px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); user-select: text !important; -webkit-user-select: text !important; }
         @media(min-width: 480px) { #search-box { width: 250px; } }
         
@@ -22,31 +31,30 @@
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; }
         #viewport:active { cursor: grabbing; }
         
-        /* Стабильный холст: Возвращаем оригинальный scale(), но с аппаратным сглаживанием против размытия */
         #canvas { 
             position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; 
             will-change: transform;
-            transform: translate3d(0,0,0);
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
         }
         
+        /* Новая векторная структура плашки: текст внутри SVG никогда не размывается */
         .player-tag { 
-            position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
-            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px;
-            text-rendering: optimizeLegibility; -webkit-font-smoothing: subpixel-antialiased; -moz-osx-font-smoothing: auto;
+            position: absolute; background: none !important; border: none !important; box-shadow: none !important; 
+            padding: 0 !important; display: flex; align-items: center; pointer-events: none;
         }
-        .admin-mode .player-tag { cursor: move; }
-        .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
+        .player-tag svg { overflow: visible; pointer-events: auto; }
+        .player-tag text { font-weight: bold; font-family: sans-serif; font-size: 16px; dominant-baseline: middle; }
+        .admin-mode .player-tag svg { cursor: move; }
+        
+        .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; pointer-events: auto; }
         .admin-mode .player-delete-btn { display: inline-block; }
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
         #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
         #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
-        .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; }
+        .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; user-select: text !important; -webkit-user-select: text !important; }
         .modal-box h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .modal-box p { font-size: 14px; color: #333; line-height: 1.4; word-break: break-word; }
-        .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; }
+        .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; user-select: text !important; -webkit-user-select: text !important; }
         .modal-box button { width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
         
         .guide-line { position: absolute; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
@@ -111,7 +119,7 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Движение карты мышкой (ПК): строго по ЛКМ (e.button === 0)
+        // Движение карты мыши: СТРОГО по ЛКМ (e.button === 0)
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0) return;
             if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag") && !e.target.parentNode.parentNode.classList.contains("player-tag")) return;
@@ -120,7 +128,7 @@
         window.addEventListener("mousemove", e => { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
         window.addEventListener("mouseup", () => isPanning = false);
         
-        // Исправлено: Движение карты пальцами (Смартфоны) через правильные тачи [0] и [1]
+        // Движение карты пальцами (Смартфоны) с фиксом массивов тачей
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (e.touches.length === 1) {
@@ -221,31 +229,51 @@
             players.forEach(p => {
                 const t = document.createElement("div"); t.className = "player-tag";
                 t.setAttribute("data-id", p.id);
-                const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
+                
+                // Создаем SVG-контейнер для абсолютно бесконечного качества букв без пикселей
+                const svgNS = "http://w3.org";
+                const svgEl = document.createElementNS(svgNS, "svg");
+                const textEl = document.createElementNS(svgNS, "text");
+                
+                let displayName = p.name;
+                if (p.pinned) { t.style.fontWeight = "900"; displayName = "📌 " + p.name; }
+                
+                textEl.textContent = displayName;
+                textEl.setAttribute("x", "0");
+                textEl.setAttribute("y", "50%");
+                textEl.setAttribute("fill", p.color || "#000000");
+                
+                // Применяем индивидуальный масштаб текста внутри вектора
+                const fontSize = 16 * (p.scale || 1);
+                textEl.style.fontSize = fontSize + "px";
+                
+                svgEl.appendChild(textEl);
+                t.appendChild(svgEl);
+                
+                // Кнопка удаления для админа
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
                 t.style.left = p.x + "px";
                 t.style.top = p.y + "px";
-                t.style.color = p.color || "#000000";
-                t.style.fontSize = (16 * (p.scale || 1)) + "px";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
-                if (p.pinned) {
-                    t.style.fontWeight = "900";
-                    const pin = document.createElement("span");
-                    pin.className = "pin-icon";
-                    pin.textContent = "📌";
-                    t.appendChild(pin);
-                }
+                // Подгоняем размеры SVG-контейнера под длину текста, чтобы работали магниты
+                setTimeout(() => {
+                    try {
+                        const bbox = textEl.getBBox();
+                        svgEl.setAttribute("width", (bbox.width + 10));
+                        svgEl.setAttribute("height", (bbox.height + 10));
+                    } catch(e) {}
+                }, 0);
 
-                t.addEventListener("contextmenu", e => showPlayerMenu(p, e));
+                svgEl.addEventListener("contextmenu", e => showPlayerMenu(p, e));
                 
                 let touchTimer;
-                t.addEventListener("touchstart", e => {
+                svgEl.addEventListener("touchstart", e => {
                     touchTimer = setTimeout(() => { showPlayerMenu(p, null); }, 800);
                 });
-                t.addEventListener("touchend", () => clearTimeout(touchTimer));
-                t.addEventListener("touchmove", () => clearTimeout(touchTimer));
+                svgEl.addEventListener("touchend", () => clearTimeout(touchTimer));
+                svgEl.addEventListener("touchmove", () => clearTimeout(touchTimer));
 
                 d.addEventListener("click", e => { e.stopPropagation(); players = players.filter(pl => pl.id !== p.id); renderPlayers(); });
                 
@@ -320,12 +348,12 @@
                     };
                     const endDrag = () => { if (drag) { drag = false; guideH.style.display = "none"; guideV.style.display = "none"; } };
 
-                    t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); startDrag(); } });
+                    svgEl.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); startDrag(); } });
                     window.addEventListener("mousemove", e => moveDrag(e.clientX, e.clientY));
                     window.addEventListener("mouseup", endDrag);
 
-                    t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); startDrag(); } });
-                    window.addEventListener("touchmove", e => { if(e.touches.length === 1) moveDrag(e.touches[0].clientX, e.touches[0].clientY); });
+                    svgEl.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); startDrag(); } });
+                    window.addEventListener("touchmove", e => { if(e.touches.length === 1) moveDrag(e.touches.clientX, e.touches.clientY); });
                     window.addEventListener("touchend", endDrag);
                 }
                 canvas.appendChild(t);
