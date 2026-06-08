@@ -17,7 +17,22 @@
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; }
         
-        .player-tag { position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; display: flex; align-items: center; }
+        /* Исправление графического бага: добавлен padding-bottom и форсирование аппаратного сглаживания */
+        .player-tag { 
+            position: absolute; 
+            font-weight: bold; 
+            white-space: nowrap; 
+            user-select: none; 
+            color: #000000; 
+            background: none !important; 
+            border: none !important; 
+            box-shadow: none !important; 
+            padding: 0 0 3px 0 !important; /* Отступ снизу для безопасного рендера хвостиков букв р, у, д */
+            display: flex; 
+            align-items: center; 
+            will-change: transform, left, top; /* Оптимизация рендеринга при движении */
+            line-height: 1.1;
+        }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
@@ -103,7 +118,6 @@
             if (!isTargetAdmin || e.target !== viewport) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
             if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
-            // Изначальный слой изменен на layer: 1
             players.push({ id: Date.now(), name: n, x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
             renderPlayers();
         });
@@ -164,7 +178,6 @@
                 t.style.color = p.color || "#000000";
                 t.style.fontSize = (16 * (p.scale || 1)) + "px";
                 
-                // Дефолтный слой 1, если параметр не задан в базе
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -210,3 +223,4 @@
     </script>
 </body>
 </html>
+
