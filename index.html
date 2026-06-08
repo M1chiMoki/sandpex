@@ -5,118 +5,25 @@
 #admin-btn,#save-btn{background:#000;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;box-shadow:0 4px 10px rgba(0,0,0,0.1);transition:0.2s;margin-left:10px;}
 #admin-btn:hover,#save-btn:hover{background:#333;}#admin-btn.logged-in{background:#2ecc71;color:#fff;cursor:default;}#save-btn{display:none;background:#2f80ed;color:#fff;}
 #viewport{width:100%;height:100%;position:absolute;top:0;left:0;cursor:grab;}#viewport:active{cursor:grabbing;}#canvas{position:absolute;top:0;left:0;width:1px;height:1px;transform-origin:0 0;}
-.player-tag{position:absolute;font-size:16px;font-weight:bold;white-space:nowrap;user-select:none;}
-.admin-mode .player-tag{cursor:move;}.player-delete-btn{display:none;color:#e74c3c;cursor:pointer;margin-left:6px;font-size:14px;font-weight:bold;}.admin-mode .player-delete-btn{display:inline-block;}
+.player-tag{position:absolute;font-weight:bold;white-space:nowrap;user-select:none;}.admin-mode .player-tag{cursor:move;}.player-delete-btn{display:none;color:#e74c3c;cursor:pointer;margin-left:6px;font-size:14px;font-weight:bold;}.admin-mode .player-delete-btn{display:inline-block;}
 #nav-tip{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.05);color:#000;padding:6px 16px;border-radius:20px;font-size:12px;pointer-events:none;z-index:999;}
-/* Стили для диалогового окна информации */
 #info-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:999999;justify-content:center;align-items:center;}
-.modal-box{background:#fff;padding:20px;border-radius:8px;width:320px;box-shadow:0 4px 20px rgba(0,0,0,0.3);border:2px solid #000;}
-.modal-box h3{margin-top:0;border-bottom:1px solid #eee;padding-bottom:8px;}
-.modal-box p{font-size:14px;color:#333;line-height:1.4;word-break:break-word;}
-.modal-box pre{background:#f4f4f4;padding:8px;font-size:11px;overflow-x:auto;border-radius:4px;border:1px solid #ddd;max-height:120px;}
-.modal-box button{width:100%;padding:10px;background:#000;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:10px;}
-</style></head><body>
-    <div id="ui-container">
-        <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник на карте..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
-    </div>
-    <div id="nav-tip">ЛКМ: Перетаскивание карты | ПКМ на ник: Инфо/Цвет | Двойной клик: Создать ник (Админ)</div>
-    <div id="viewport"><div id="canvas"></div></div>
-
-    <!-- Всплывающий диалог информации о нике -->
-    <div id="info-modal"><div class="modal-box" id="modal-box"></div></div>
-
-<script>
-const SECRET_KEY="sandpex2019wh";
-const viewport=document.getElementById("viewport"),canvas=document.getElementById("canvas"),adminBtn=document.getElementById("admin-btn"),saveBtn=document.getElementById("save-btn"),searchBox=document.getElementById("search-box"),infoModal=document.getElementById("info-modal"),modalBox=document.getElementById("modal-box");
+.modal-box{background:#fff;padding:20px;border-radius:8px;width:320px;box-shadow:0 4px 20px rgba(0,0,0,0.3);border:2px solid #000;}.modal-box h3{margin-top:0;border-bottom:1px solid #eee;padding-bottom:8px;}.modal-box p{font-size:14px;color:#333;line-height:1.4;word-break:break-word;}.modal-box pre{background:#f4f4f4;padding:8px;font-size:11px;overflow-x:auto;border-radius:4px;border:1px solid #ddd;max-height:100px;}.modal-box button{width:100%;padding:8px;background:#000;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;}
+.guide-line{position:absolute;border:none;background:none;z-index:9998;pointer-events:none;display:none;}#guide-h{width:100000px;height:1px;border-top:1px dashed #2f80ed;left:-50000px;}#guide-v{width:1px;height:100000px;border-left:1px dashed #2f80ed;top:-50000px;}
+</style></head><body><div id="ui-container"><div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник на карте..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div></div><div id="nav-tip">ЛКМ: Перемещение карты | ПКМ на ник: Меню/Свойства | Двойной клик: Создать ник (Админ)</div><div id="viewport"><div id="canvas"><div id="guide-h" class="guide-line"></div><div id="guide-v" class="guide-line"></div></div></div><div id="info-modal"><div class="modal-box" id="modal-box"></div></div><script>
+const SECRET_KEY="sandpex2019wh";const viewport=document.getElementById("viewport"),canvas=document.getElementById("canvas"),adminBtn=document.getElementById("admin-btn"),saveBtn=document.getElementById("save-btn"),searchBox=document.getElementById("search-box"),infoModal=document.getElementById("info-modal"),modalBox=document.getElementById("modal-box"),guideH=document.getElementById("guide-h"),guideV=document.getElementById("guide-v");
 let isTargetAdmin=localStorage.getItem("sandpex_is_admin")==="true",panX=window.innerWidth/2,panY=window.innerHeight/2,zoom=1,isPanning=false,startX,startY,players=[];
 function updateTransform(){canvas.style.transform="translate("+panX+"px,"+panY+"px) scale("+zoom+")";}
 if(isTargetAdmin){document.body.classList.add("admin-mode");adminBtn.textContent="Режим: Администратор";adminBtn.classList.add("logged-in");saveBtn.style.display="inline-block";}
 adminBtn.addEventListener("click",()=>{if(isTargetAdmin)return;const p=prompt("Введите пароль администратора для sandpex:");if(p===SECRET_KEY){localStorage.setItem("sandpex_is_admin","true");alert("Доступ разрешен!");window.location.reload();}else if(p!==null){alert("Неверный пароль!");}});
-
-async function loadPlayersFromServer(){
-    try{
-        const r=await fetch("players.json?t="+Date.now(),{cache:"no-store"});
-        if(r.ok){ players=await r.json(); renderPlayers(); }
-    }catch(e){ console.log("Ошибка чтения файла базы."); }
-}
-
-saveBtn.addEventListener("click",()=>{if(!isTargetAdmin)return;const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(players,null,2));const downloadAnchor=document.createElement('a');downloadAnchor.setAttribute("href",dataStr);downloadAnchor.setAttribute("download","players.json");document.body.appendChild(downloadAnchor);downloadAnchor.click();downloadAnchor.remove();alert("Файл 'players.json' успешно скачан! Загрузите его на GitHub.");});
-
+async function loadPlayersFromServer(){try{const r=await fetch("players.json?t="+Date.now(),{cache:"no-store"});if(r.ok){players=await r.json();renderPlayers();}}catch(e){console.log("Ошибка чтения базы.");}}
+saveBtn.addEventListener("click",()=>{if(!isTargetAdmin)return;const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(players,null,2));const dA=document.createElement('a');dA.setAttribute("href",dataStr);dA.setAttribute("download","players.json");document.body.appendChild(dA);dA.click();dA.remove();alert("Файл 'players.json' успешно скачан! Загрузите его на GitHub.");});
 searchBox.addEventListener("input",()=>{const q=searchBox.value.trim().toLowerCase();if(!q)return;const f=players.find(p=>p.name.toLowerCase().includes(q));if(f){zoom=1.5;panX=window.innerWidth/2-f.x*zoom;panY=window.innerHeight/2-f.y*zoom;updateTransform();}});
-viewport.addEventListener("mousedown",e=>{if(e.target!==viewport&&!e.target.classList.contains("player-tag")&&!e.target.parentNode.classList.contains("player-tag"))return;if((e.target.classList.contains("player-tag")||e.target.parentNode.classList.contains("player-tag"))&&isTargetAdmin)return;isPanning=true;startX=e.clientX-panX;startY=e.clientY-panY;});
+viewport.addEventListener("mousedown",e=>{if(e.button!==0)return;if(e.target!==viewport&&!e.target.classList.contains("player-tag")&&!e.target.parentNode.classList.contains("player-tag"))return;if((e.target.classList.contains("player-tag")||e.target.parentNode.classList.contains("player-tag"))&&isTargetAdmin)return;isPanning=true;startX=e.clientX-panX;startY=e.clientY-panY;});
 window.addEventListener("mousemove",e=>{if(isPanning){panX=e.clientX-startX;panY=e.clientY-startY;updateTransform();}});window.addEventListener("mouseup",()=>isPanning=false);
 window.addEventListener("wheel",e=>{const f=1.1;if(e.deltaY<0){if(zoom<30)zoom*=f;}else{if(zoom>0.01)zoom/=f;}updateTransform();},{passive:true});
-
-viewport.addEventListener("dblclick",e=>{
-    if(!isTargetAdmin||e.target!==viewport) return;
-    const n=prompt("Введите ник игрока:");
-    if(!n) return;
-    if(players.some(p=>p.name.toLowerCase()===n.trim().toLowerCase())){alert("Этот ник уже есть на карте!");return;}
-    // Оптимизированная структура: по дефолту черный цвет и пустое описание
-    players.push({id:Date.now(),name:n,x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom,color:"#000000",description:""});
-    renderPlayers();
-});
-
-// Закрытие модального окна при клике вне карточки
+viewport.addEventListener("dblclick",e=>{if(!isTargetAdmin||e.target!==viewport)return;const n=prompt("Введите ник игрока:");if(!n)return;if(players.some(p=>p.name.toLowerCase()===n.trim().toLowerCase())){alert("Этот ник уже есть на карте!");return;}players.push({id:Date.now(),name:n,x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom,color:"#000000",description:"",pinned:false,scale:1});renderPlayers();});
 infoModal.addEventListener("click",e=>{if(e.target===infoModal)infoModal.style.display="none";});
+function showPlayerMenu(p,e){e.preventDefault();modalBox.innerHTML="<h3>Игрок: "+p.name+"</h3>";const dT=p.description&&p.description.trim()?p.description:"Описание отсутствует.";modalBox.innerHTML+="<p><strong>Описание:</strong><br>"+dT+"</p>";if(isTargetAdmin){modalBox.innerHTML+="<button id='edit-desc-btn' style='background:#2f80ed;'>Изменить описание</button>";modalBox.innerHTML+="<button id='edit-color-btn' style='background:#e67e22;'>Изменить цвет текста</button>";modalBox.innerHTML+="<button id='edit-scale-btn' style='background:#9b59b6;'>Изменить масштаб текста ("+(p.scale||1)+")</button>";const pT=p.pinned?"Открепить ник":"Закрепить ник";modalBox.innerHTML+="<button id='toggle-pin-btn' style='background:#d35400;'>"+pT+"</button>";modalBox.innerHTML+="<strong>Данные из players.json:</strong>";const rI={id:p.id,name:p.name,x:Math.round(p.x),y:Math.round(p.y),color:p.color||"#000000",description:p.description||"",pinned:!!p.pinned,scale:p.scale||1};modalBox.innerHTML+="<pre>"+JSON.stringify(rI,null,2)+"</pre>";}modalBox.innerHTML+="<button id='close-modal-btn' style='background:#7f8c8d;'>Закрыть</button>";infoModal.style.display="flex";document.getElementById('close-modal-btn').addEventListener('click',()=>infoModal.style.display="none");if(isTargetAdmin){document.getElementById('edit-desc-btn').addEventListener('click',()=>{const d=prompt("Описание для "+p.name+":",p.description||"");if(d!==null){p.description=d;renderPlayers();infoModal.style.display="none";}});document.getElementById('edit-color-btn').addEventListener('click',()=>{const c=prompt("Цвет для "+p.name+":",p.color||"#000000");if(c!==null){p.color=c.trim()?c.trim().toLowerCase():"#000000";renderPlayers();infoModal.style.display="none";}});document.getElementById('edit-scale-btn').addEventListener('click',()=>{const s=prompt("Масштаб текста (например: 1, 1.5, 0.5):",p.scale||1);if(s!==null&&!isNaN(s)&&Number(s)>0){p.scale=Number(s);renderPlayers();infoModal.style.display="none";}});document.getElementById('toggle-pin-btn').addEventListener('click',()=>{p.pinned=!p.pinned;renderPlayers();infoModal.style.display="none";});}}
+function renderPlayers(){const tG=canvas.querySelectorAll('.player-tag');tG.forEach(t=>t.remove());players.forEach(p=>{const t=document.createElement("div");t.className="player-tag";const s=document.createElement("span");s.textContent=p.name;t.appendChild(s);const d=document.createElement("span");d.className="player-delete-btn";d.textContent="  ×";t.appendChild(d);t.style.left=p.x+"px";t.style.top=p.y+"px";t.style.color=p.color||"#000000";t.style.fontSize=(16*(p.scale||1))+"px";if(p.pinned){t.style.fontWeight="900";s.textContent="📌 "+p.name;}t.addEventListener("contextmenu",e=>showPlayerMenu(p,e));d.addEventListener("click",e=>{e.stopPropagation();players=players.filter(pl=>pl.id!==p.id);renderPlayers();});if(isTargetAdmin&&!p.pinned){let drg=false;t.addEventListener("mousedown",e=>{if(e.button===0&&e.target!==d){e.stopPropagation();drg=true;}});window.addEventListener("mousemove",e=>{if(drg){let tX=(e.clientX-panX)/zoom,tY=(e.clientY-panY)/zoom,sH=false,sV=false;players.forEach(o=>{if(o.id!==p.id&&o.pinned){if(Math.abs(tY-o.y)<15){tY=o.y;sH=true;guideH.style.top=o.y+"px";guideH.style.display="block";}if(Math.abs(tX-o.x)<15){tX=o.x;sV=true;guideV.style.left=o.x+"px";guideV.style.display="block";}}});if(!sH)guideH.style.display="none";if(!sV)guideV.style.display="none";p.x=tX;p.y=tY;t.style.left=p.x+"px";t.style.top=p.y+"px";}});window.addEventListener("mouseup",()=>{if(drg){drg=false;guideH.style.display="none";guideV.style.display="none";}});}}canvas.appendChild(t);});}updateTransform();loadPlayersFromServer();</script></body></html>
 
-function showPlayerMenu(p,e) {
-    e.preventDefault(); // Блокируем стандартное браузерное меню ПКМ
-    modalBox.innerHTML = "<h3>Игрок: " + p.name + "</h3>";
-    
-    // Показываем текущее описание для всех
-    const descText = p.description && p.description.trim() ? p.description : "Описание отсутствует.";
-    modalBox.innerHTML += "<p><strong>Описание:</strong><br>" + descText + "</p>";
-
-    if(isTargetAdmin) {
-        // Кнопки управления только для Админа
-        modalBox.innerHTML += "<button id='edit-desc-btn' style='background:#2f80ed;margin-bottom:5px;'>Изменить описание</button>";
-        modalBox.innerHTML += "<button id='edit-color-btn' style='background:#e67e22;margin-bottom:10px;'>Изменить цвет текста</button>";
-        // Вывод всей сырой информации из players.json для админа
-        modalBox.innerHTML += "<strong>Данные из players.json:</strong>";
-        const rawInfo = { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), color: p.color || "#000000", description: p.description || "" };
-        modalBox.innerHTML += "<pre>" + JSON.stringify(rawInfo, null, 2) + "</pre>";
-    }
-
-    modalBox.innerHTML += "<button id='close-modal-btn' style='background:#7f8c8d;'>Закрыть</button>";
-    infoModal.style.display = "flex";
-
-    // Навешиваем события на созданные кнопки внутри диалога
-    document.getElementById('close-modal-btn').addEventListener('click',()=>infoModal.style.display="none");
-    
-    if(isTargetAdmin) {
-        document.getElementById('edit-desc-btn').addEventListener('click', () => {
-            const newDesc = prompt("Введите описание для " + p.name + ":", p.description || "");
-            if(newDesc !== null) { p.description = newDesc; renderPlayers(); infoModal.style.display = "none"; }
-        });
-        document.getElementById('edit-color-btn').addEventListener('click', () => {
-            const newColor = prompt("Введите цвет (английское название или #HEX код) для " + p.name + ":", p.color || "#000000");
-            if(newColor !== null) { p.color = newColor.trim() ? newColor.trim().toLowerCase() : "#000000"; renderPlayers(); infoModal.style.display = "none"; }
-        });
-    }
-}
-
-function renderPlayers(){
-    canvas.innerHTML="";
-    players.forEach(p => {
-        const t=document.createElement("div");t.className="player-tag";
-        const s=document.createElement("span");s.textContent=p.name;t.appendChild(s);
-        const d=document.createElement("span");d.className="player-delete-btn";d.textContent="  ×";t.appendChild(d);
-        t.style.left=p.x+"px";t.style.top=p.y+"px";
-        t.style.color=p.color || "#000000";
-        
-        // Клик правой кнопкой мыши (ПКМ) на ник вызывает наше меню
-        t.addEventListener("contextmenu", (e) => showPlayerMenu(p, e));
-
-        d.addEventListener("click",e=>{e.stopPropagation();players=players.filter(pl=>pl.id!==p.id);renderPlayers();});
-        if(isTargetAdmin){
-            let drag=false;
-            t.addEventListener("mousedown",e=>{if(e.target===d)return;e.stopPropagation();drag=true;});
-            window.addEventListener("mousemove",e=>{if(drag){p.x=(e.clientX-panX)/zoom;p.y=(e.clientY-panY)/zoom;t.style.left=p.x+"px";t.style.top=p.y+"px";}});
-            window.addEventListener("mouseup",()=>{if(drag)drag=false;});
-        }
-        canvas.appendChild(t);
-    });
-}
-updateTransform();loadPlayersFromServer();
-</script></body></html>
