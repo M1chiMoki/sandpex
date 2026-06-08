@@ -8,17 +8,25 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; }
         #canvas-container { width: 100%; height: 100%; }
-        .viewer-mode .tl-toolbar, .viewer-mode .tl-sidebar, .viewer-mode .tl-context-menu { display: none !important; }
-        #mode-indicator {
-            position: fixed; top: 10px; left: 10px; z-index: 9999;
-            background: rgba(0,0,0,0.8); color: white; padding: 6px 12px;
-            border-radius: 4px; font-size: 13px; font-weight: bold; pointer-events: none;
+        
+        /* Прячем инструменты, если пользователь не админ */
+        .viewer-mode .tl-toolbar, 
+        .viewer-mode .tl-sidebar, 
+        .viewer-mode .tl-context-menu { display: none !important; }
+        
+        /* Кнопка входа для вас */
+        #admin-btn {
+            position: fixed; top: 15px; right: 15px; z-index: 99999;
+            background: #34495e; color: white; border: none;
+            padding: 8px 16px; border-radius: 4px; font-weight: bold;
+            cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        #admin-btn.logged-in { background: #2ecc71; cursor: default; }
     </style>
 </head>
 <body>
 
-    <div id="mode-indicator">sandpex | Режим: Просмотр (Для админа: Ctrl + Q)</div>
+    <button id="admin-btn">Войти как Админ</button>
     <div id="canvas-container" class="viewer-mode"></div>
 
     <script type="module">
@@ -26,38 +34,38 @@
         import React from 'https://esm.sh'
         import ReactDOM from 'https://esm.sh'
 
-        // ВАШ ОБНОВЛЕННЫЙ ПАРОЛЬ ДЛЯ ВХОДА
         const ADMIN_PASSWORD = 'sandpex2019wh'; 
-
         const container = document.getElementById('canvas-container');
-        const indicator = document.getElementById('mode-indicator');
+        const btn = document.getElementById('admin-btn');
 
+        // Функция активации админки
         function enableAdminMode() {
             container.classList.remove('viewer-mode');
-            indicator.textContent = "sandpex | Режим: Администратор";
-            indicator.style.background = "#2ecc71";
+            btn.textContent = "Режим: Администратор";
+            btn.classList.add('logged-in');
         }
 
+        // Проверяем, залогинены ли вы уже
         if (localStorage.getItem('sandpex_admin') === 'true') {
             enableAdminMode();
         }
 
-        // БЕЗОПАСНАЯ КОМБИНАЦИЯ КЛАВИШ: Ctrl + Q
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.code === 'KeyQ') {
-                e.preventDefault(); // Запрещаем браузеру делать свои действия
-                const pass = prompt('Введите пароль для sandpex:');
-                if (pass === ADMIN_PASSWORD) {
-                    localStorage.setItem('sandpex_admin', 'true');
-                    enableAdminMode();
-                    alert('Доступ открыт!');
-                    window.location.reload();
-                } else {
-                    alert('Неверный пароль!');
-                }
+        // Нажатие на кнопку
+        btn.addEventListener('click', () => {
+            if (localStorage.getItem('sandpex_admin') === 'true') return;
+
+            const pass = prompt('Введите пароль для sandpex:');
+            if (pass === ADMIN_PASSWORD) {
+                localStorage.setItem('sandpex_admin', 'true');
+                enableAdminMode();
+                alert('Доступ открыт! Панель инструментов появилась.');
+                window.location.reload(); // Перезагрузка для активации панелей
+            } else if (pass !== null) {
+                alert('Неверный пароль!');
             }
         });
 
+        // Запуск холста
         const root = ReactDOM.createRoot(container);
         root.render(React.createElement(Tldraw, { 
             persistenceKey: "sandpex-canvas-storage" 
