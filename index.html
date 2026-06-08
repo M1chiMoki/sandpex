@@ -56,7 +56,7 @@
         function updateTransform() { canvas.style.transform = "translate(" + panX + "px," + panY + "px) scale(" + zoom + ")"; }
         if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
         
-        adminBtn.addEventListener("click", () => {
+        adminBtn.addEventListener("click", function() {
             if (isTargetAdmin) return;
             const p = prompt("Введите пароль администратора для sandpex:");
             if (p === SECRET_KEY) { localStorage.setItem("sandpex_is_admin", "true"); alert("Доступ разрешен!"); window.location.reload(); }
@@ -68,36 +68,36 @@
                 if (r.ok) { players = await r.json(); renderPlayers(); }
             } catch (e) { console.log("Ошибка чтения базы."); }
         }
-        saveBtn.addEventListener("click", () => {
+        saveBtn.addEventListener("click", function() {
             if (!isTargetAdmin) return;
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(players, null, 2));
             const dA = document.createElement('a'); dA.setAttribute("href", dataStr); dA.setAttribute("download", "players.json");
             document.body.appendChild(dA); dA.click(); dA.remove(); alert("Файл 'players.json' успешно скачан! Загрузите его на GitHub.");
         });
-        searchBox.addEventListener("input", () => {
+        searchBox.addEventListener("input", function() {
             const q = searchBox.value.trim().toLowerCase(); if (!q) return;
             const f = players.find(p => p.name.toLowerCase().includes(q));
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
-        viewport.addEventListener("mousedown", e => {
+        viewport.addEventListener("mousedown", function(e) {
             if (e.button !== 0) return;
             if (e.target !== viewport && !e.target.classList.contains("player-tag") && !e.target.parentNode.classList.contains("player-tag")) return;
             if ((e.target.classList.contains("player-tag") || e.target.parentNode.classList.contains("player-tag")) && isTargetAdmin) return;
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
-        window.addEventListener("mousemove", e => { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
-        window.addEventListener("mouseup", () => isPanning = false);
-        window.addEventListener("wheel", e => {
+        window.addEventListener("mousemove", function(e) { if (isPanning) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } });
+        window.addEventListener("mouseup", function() { isPanning = false; });
+        window.addEventListener("wheel", function(e) {
             const f = 1.1; if (e.deltaY < 0) { if (zoom < 30) zoom *= f; } else { if (zoom > 0.01) zoom /= f; } updateTransform();
         }, { passive: true });
-        viewport.addEventListener("dblclick", e => {
+        viewport.addEventListener("dblclick", function(e) {
             if (!isTargetAdmin || e.target !== viewport) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
             if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
             players.push({ id: Date.now(), name: n, x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom, color: "#000000", description: "", pinned: false, scale: 1 });
             renderPlayers();
         });
-        infoModal.addEventListener("click", e => { if (e.target === infoModal) infoModal.style.display = "none"; });
+        infoModal.addEventListener("click", function(e) { if (e.target === infoModal) infoModal.style.display = "none"; });
         function showPlayerMenu(p, e) {
             e.preventDefault(); modalBox.innerHTML = "<h3>Игрок: " + p.name + "</h3>";
             const dT = p.description && p.description.trim() ? p.description : "Описание отсутствует.";
@@ -140,8 +140,8 @@
                 t.addEventListener("contextmenu", e => showPlayerMenu(p, e));
                 d.addEventListener("click", e => { e.stopPropagation(); players = players.filter(pl => pl.id !== p.id); renderPlayers(); });
                 if (isTargetAdmin && !p.pinned) {
-                    let drg = false; t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); drg = true; } });
-                    window.addEventListener("mousemove", e => {
+                    let drg = false; t.addEventListener("mousedown", function(e) { if (e.button === 0 && e.target !== d) { e.stopPropagation(); drg = true; } });
+                    window.addEventListener("mousemove", function(e) {
                         if (drg) {
                             let tX = (e.clientX - panX) / zoom, tY = (e.clientY - panY) / zoom, sH = false, sV = false;
                             players.forEach(o => {
