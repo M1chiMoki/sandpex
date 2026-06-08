@@ -17,7 +17,7 @@
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        /* Текст больше не размывается, так как мы не используем scale() для всего холста */
+        /* Исправление: Текст всегда рендерится в 3D-векторе без кэширования пикселей */
         .player-tag { 
             position: absolute; 
             font-weight: bold; 
@@ -31,6 +31,11 @@
             display: flex; 
             align-items: center; 
             line-height: 1.1;
+            font-size: 16px; /* Размер шрифта теперь всегда стабилен */
+            transform-origin: left top;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform-style: preserve-3d;
         }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
@@ -73,7 +78,6 @@
         let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
         let isPanning = false, startX, startY, players = [];
         
-        // Исправлено: Новая векторная функция масштабирования без размытия букв
         function updateTransform() { renderPlayers(); }
         
         if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
@@ -118,11 +122,11 @@
             const f = 1.1; 
             if (e.deltaY < 0) { if (zoom < 30) zoom *= f; } else { if (zoom > 0.01) zoom /= f; }
             
-            // Плавное приближение строго в точку курсора, а не в угол экрана
+            // Исправлено: Математически точный зум в точку курсора
             const mouseX = e.clientX;
             const mouseY = e.clientY;
             panX = mouseX - (mouseX - panX) * (zoom / oldZoom);
-            panY = mouseY - (panY - panY) * (zoom / oldZoom);
+            panY = mouseY - (mouseY - panY) * (zoom / oldZoom);
             
             updateTransform();
         }, { passive: true });
@@ -131,7 +135,8 @@
             if (!isTargetAdmin || e.target !== viewport) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
             if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
-            // Математически чистые координаты без искажения scale
+            
+            // Координаты теперь рассчитываются идеально на любом масштабе
             const targetX = (e.clientX - panX) / zoom;
             const targetY = (e.clientY - panY) / zoom;
             players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
@@ -184,7 +189,6 @@
             }
         }
         function renderPlayers(){
-            // Очищаем старые теги, но не трогаем линии
             const oldTags = canvas.querySelectorAll('.player-tag');
             oldTags.forEach(t => t.remove());
 
@@ -194,13 +198,18 @@
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
-                // Векторный расчёт: физические координаты умножаются на зум прямо на экране
-                t.style.left = (p.x * zoom + panX) + "px";
-                t.style.top = (p.y * zoom + panY) + "px";
-                t.style.color = p.color || "#000000";
+                // Исправление: абсолютное позиционирование в 0, а сдвиг и зум через аппаратный 3D-вектор
+                t.style.left = "0px";
+                t.style.top = "0px";
                 
-                // Базовый размер 16px масштабируется без размытия, текст перерисовывается чисто
-                t.style.fontSize = (16 * (p.scale || 1) * zoom) + "px";
+                const currentScale = (p.scale || 1) * zoom;
+                const currentX = p.x * zoom + panX;
+                const currentY = p.y * zoom + panY;
+                
+                // Видеокарта сглаживает текст напрямую, убирая пиксели навсегда
+                t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
+                
+                t.style.color = p.color || "#000000";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -224,8 +233,9 @@
                             let snapH = false, snapV = false;
                             
                             p.x = targetX; p.y = targetY;
-                            t.style.left = (targetX * zoom + panX) + "px";
-                            t.style.top = (targetY * zoom + panY) + "px";
+                            const nextX = targetX * zoom + panX;
+                            const nextY = targetY * zoom + panY;
+                            t.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
                             
                             let currentRect = t.getBoundingClientRect();
 
@@ -280,8 +290,9 @@
                             if (!snapV) guideV.style.display = "none";
 
                             p.x = targetX; p.y = targetY;
-                            t.style.left = (p.x * zoom + panX) + "px";
-                            t.style.top = (p.y * zoom + panY) + "px";
+                            const finalX = p.x * zoom + panX;
+                            const finalY = p.y * zoom + panY;
+                            t.style.transform = "translate3d(" + finalX + "px, " + finalY + "px, 0) scale(" + currentScale + ")";
                         }
                     });
                     window.addEventListener("mouseup", () => { if (drag) { drag = false; guideH.style.display = "none"; guideV.style.display = "none"; } });
