@@ -7,30 +7,41 @@
     <link rel="stylesheet" href="https://unpkg.com">
     <style>
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #canvas-container { width: 100%; height: 100%; }
+        
+        /* Главный контейнер для холста */
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         
         /* Скрытие панелей для обычных зрителей */
         .viewer-mode .tl-toolbar, 
         .viewer-mode .tl-sidebar, 
         .viewer-mode .tl-context-menu { display: none !important; }
         
+        /* Защищенная панель управления (всегда поверх холста) */
+        #controls-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            pointer-events: none; z-index: 999999 !important;
+        }
+
         /* Кнопка входа */
         #admin-btn {
-            position: fixed; top: 15px; right: 15px; z-index: 99999;
+            position: absolute; top: 15px; right: 15px; pointer-events: auto;
             background: #34495e; color: white; border: none;
             padding: 10px 20px; border-radius: 4px; font-weight: bold;
-            cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            transition: background 0.3s;
         }
+        #admin-btn:hover { background: #2c3e50; }
         #admin-btn.logged-in { background: #2ecc71; cursor: default; }
 
-        /* Красивое встроенное окно для ввода пароля */
+        /* Встроенное модальное окно */
         #login-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 999999; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.7); z-index: 9999999 !important;
+            justify-content: center; align-items: center; pointer-events: auto;
         }
         .modal-content {
             background: white; padding: 25px; border-radius: 8px; width: 300px;
-            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
         }
         .modal-content h3 { margin-top: 0; color: #333; }
         .modal-content input {
@@ -47,7 +58,10 @@
 </head>
 <body>
 
-    <button id="admin-btn">Войти как Админ</button>
+    <!-- Изолированный слой управления поверх карты -->
+    <div id="controls-layer">
+        <button id="admin-btn">Войти как Админ</button>
+    </div>
 
     <!-- Окно ввода пароля -->
     <div id="login-modal">
@@ -61,6 +75,7 @@
         </div>
     </div>
 
+    <!-- Сам бесконечный холст -->
     <div id="canvas-container" class="viewer-mode"></div>
 
     <script type="module">
@@ -68,7 +83,17 @@
         import React from 'https://esm.sh'
         import ReactDOM from 'https://esm.sh'
 
-        const ADMIN_PASSWORD = 'sandpex2019wh'; 
+        // Безопасность: Хэш SHA-256 от вашего пароля. Сам пароль в коде не содержится!
+        const HASHED_PASSWORD = "300302b1fec3b5bdf446e5ca91d31fa4a2ee6f4ccbe89a774618e47209930f7b"; 
+
+        // Функция шифрования для проверки ввода
+        async function sha256(string) {
+            const utf8 = new TextEncoder().encode(string);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         const container = document.getElementById('canvas-container');
         const btn = document.getElementById('admin-btn');
         const modal = document.getElementById('login-modal');
@@ -84,26 +109,27 @@
             enableAdminMode();
         }
 
-        // Открытие окна по клику
-        btn.addEventListener('click', () => {
+        // Клик по кнопке теперь сработает 100%, так как она изолирована сверху
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (localStorage.getItem('sandpex_admin') === 'true') return;
             modal.style.display = 'flex';
             passInput.focus();
         });
 
-        // Закрытие окна
         document.getElementById('close-modal').addEventListener('click', () => {
             modal.style.display = 'none';
             passInput.value = '';
         });
 
-        // Проверка пароля
-        document.getElementById('submit-pass').addEventListener('click', () => {
-            if (passInput.value === ADMIN_PASSWORD) {
+        // Безопасная проверка пароля через крипто-хэш
+        document.getElementById('submit-pass').addEventListener('click', async () => {
+            const enteredHash = await sha256(passInput.value);
+            if (enteredHash === HASHED_PASSWORD) {
                 localStorage.setItem('sandpex_admin', 'true');
                 enableAdminMode();
                 modal.style.display = 'none';
-                alert('Доступ открыт!');
+                alert('Доступ открыт! Панель управления активирована.');
                 window.location.reload();
             } else {
                 alert('Неверный пароль!');
@@ -111,7 +137,6 @@
             }
         });
 
-        // Вход по нажатию Enter в поле ввода
         passInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('submit-pass').click();
