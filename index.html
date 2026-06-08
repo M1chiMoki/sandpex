@@ -112,7 +112,7 @@
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Глобальная и безотказная функция создания нового игрока
+        // Глобальная функция создания нового игрока
         function createNewPlayer(clientX, clientY) {
             if (!isTargetAdmin) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
@@ -123,12 +123,12 @@
             renderPlayers();
         }
 
-        // Движение карты мышкой + Исправленный таймер долгого зажатия
+        // Движение карты мышкой + Фикс зажатия для создания ника
         let mapHoldTimer;
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0 || dragActive) return;
             
-            // Запускаем таймер зажатия на пустом месте (1.5 сек)
+            // Если кликнули на пустую карту, запускаем таймер долгого зажатия (1.5 сек) для создания ника
             if (e.target === viewport) {
                 mapHoldTimer = setTimeout(() => {
                     createNewPlayer(e.clientX, e.clientY);
@@ -140,7 +140,7 @@
         });
 
         window.addEventListener("mousemove", e => { 
-            clearTimeout(mapHoldTimer);
+            clearTimeout(mapHoldTimer); // Если начали двигать мышь, отменяем создание
             if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
         });
 
@@ -149,12 +149,10 @@
             isPanning = false;
         });
 
-        // Исправлено: Глобальный перехват двойного клика, которому не мешают слои canvas
-        window.addEventListener("dblclick", e => {
-            if (!isTargetAdmin || dragActive) return;
-            // Проверяем, что кликнули по свободному месту, а не по интерфейсу или другому нику
-            if (e.target === viewport || e.target.id === "ui-container" || e.target.tagName === "BODY" || e.target.id === "canvas") {
-                e.preventDefault();
+        // Восстановленный двойной клик — теперь ловит строго по вьюпорту
+        viewport.addEventListener("dblclick", e => {
+            e.preventDefault();
+            if (e.target === viewport) {
                 createNewPlayer(e.clientX, e.clientY);
             }
         });
@@ -256,10 +254,15 @@
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
-                t.style.left = p.x + "px";
-                t.style.top = p.y + "px";
+                t.style.left = "0px";
+                t.style.top = "0px";
+                
+                const currentScale = (p.scale || 1) * zoom;
+                const currentX = p.x * zoom + panX;
+                const currentY = p.y * zoom + panY;
+                
+                t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
                 t.style.color = p.color || "#000000";
-                t.style.fontSize = (16 * (p.scale || 1)) + "px";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -306,7 +309,10 @@
             let snapH = false, snapV = false;
             
             p.x = targetX; p.y = targetY;
-            dragElement.style.left = targetX + "px"; dragElement.style.top = targetY + "px";
+            const currentScale = (p.scale || 1) * zoom;
+            const nextX = targetX * zoom + panX;
+            const nextY = targetY * zoom + panY;
+            dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
             
             let currentRect = dragElement.getBoundingClientRect();
 
@@ -354,7 +360,9 @@
             if (!snapH) guideH.style.display = "none";
             if (!snapV) guideV.style.display = "none";
             p.x = targetX; p.y = targetY;
-            dragElement.style.left = p.x + "px"; dragElement.style.top = p.y + "px";
+            const finalX = p.x * zoom + panX;
+            const finalY = p.y * zoom + panY;
+            dragElement.style.transform = "translate3d(" + finalX + "px, " + finalY + "px, 0) scale(" + currentScale + ")";
         };
 
         const stopDrag = () => {
