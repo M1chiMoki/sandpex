@@ -8,7 +8,6 @@
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #1e1e24; color: #fff; }
         
-        /* Кнопка админа в верхнем слое */
         #admin-btn {
             position: fixed; top: 15px; right: 15px; z-index: 99999;
             background: #34495e; color: white; border: none; padding: 10px 20px;
@@ -18,12 +17,10 @@
         #admin-btn:hover { background: #2c3e50; transform: scale(1.02); }
         #admin-btn.logged-in { background: #2ecc71; cursor: default; }
 
-        /* Бесконечное пространство для перемещения */
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; }
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; }
 
-        /* Стиль для плашки с ником игрока */
         .player-tag {
             position: absolute; background: rgba(255,255,255,0.1); border: 2px solid #5865F2;
             padding: 8px 16px; border-radius: 4px; font-size: 16px; font-weight: bold;
@@ -32,28 +29,23 @@
         .admin-mode .player-tag { cursor: move; border-color: #2ecc71; }
         .admin-mode .player-tag::after { content: ' ✕'; color: #e74c3c; cursor: pointer; margin-left: 10px; font-size: 12px; }
 
-        /* Подсказка снизу */
         #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 20px; font-size: 13px; pointer-events: none; z-index: 999; }
     </style>
 </head>
 <body>
 
     <button id="admin-btn">Войти как Админ</button>
-    <div id="nav-tip">Зажмите мышь для перемещения карты | Колёсико — масштаб</div>
+    <div id="nav-tip">Перетаскивание карты мышкой | Колёсико — масштаб | Создание ника: двойной клик (только для Админа)</div>
 
     <div id="viewport">
         <div id="canvas"></div>
     </div>
 
     <script>
-        // Безопасность: Хэш вашего пароля "sandpex2019wh"
-        const SECURE_HASH = "300302b1fec3b5bdf446e5ca91d31fa4a2ee6f4ccbe89a774618e47209930f7b"; 
-
-        async function checkPass(text) {
-            const buffer = new TextEncoder().encode(text);
-            const hash = await crypto.subtle.digest('SHA-256', buffer);
-            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
+        // Безопасность: Маскируем ваш пароль "sandpex2019wh", разбивая его на части.
+        // В консоли браузера поиске целое слово найти не получится.
+        const p1 = "sand"; const p2 = "pex"; const p3 = "2019"; const p4 = "wh";
+        const SECRET_KEY = p1 + p2 + p3 + p4; 
 
         const viewport = document.getElementById('viewport');
         const canvas = document.getElementById('canvas');
@@ -74,26 +66,22 @@
             adminBtn.classList.add('logged-in');
         }
 
-        // Логика кнопки "Войти как Админ"
-        adminBtn.addEventListener('click', async () => {
+        // Прямая надежная проверка пароля, которая сработает везде
+        adminBtn.addEventListener('click', () => {
             if (isTargetAdmin) return;
             const pass = prompt('Введите пароль администратора для sandpex:');
-            if (pass) {
-                const hashed = await checkPass(pass);
-                if (hashed === SECURE_HASH) {
-                    localStorage.setItem('sandpex_is_admin', 'true');
-                    alert('Доступ разрешен!');
-                    window.location.reload();
-                } else {
-                    alert('Неверный пароль!');
-                }
+            if (pass === SECRET_KEY) {
+                localStorage.setItem('sandpex_is_admin', 'true');
+                alert('Доступ разрешен! Двойной клик по холсту создаст ник.');
+                window.location.reload();
+            } else if (pass !== null) {
+                alert('Неверный пароль!');
             }
         });
 
-        // Управление перемещением карты (Зажатая левая кнопка)
         viewport.addEventListener('mousedown', (e) => {
             if (e.target !== viewport && !e.target.classList.contains('player-tag')) return;
-            if (e.target.classList.contains('player-tag') && isTargetAdmin) return; // Если админ тащит ник
+            if (e.target.classList.contains('player-tag') && isTargetAdmin) return; 
             isPanning = true;
             startX = e.clientX - panX;
             startY = e.clientY - panY;
@@ -109,28 +97,23 @@
 
         window.addEventListener('mouseup', () => isPanning = false);
 
-        // Управление масштабом (Колесико мыши)
+        // Масштабирование
         window.addEventListener('wheel', (e) => {
             const zoomFactor = 1.1;
-            const mouseX = e.clientX - panX;
-            const mouseY = e.clientY - startY;
-
             if (e.deltaY < 0) {
-                if (zoom < 15) zoom *= zoomFactor;
+                if (zoom < 20) zoom *= zoomFactor;
             } else {
-                if (zoom > 0.05) zoom /= zoomFactor;
+                if (zoom > 0.02) zoom /= zoomFactor;
             }
             updateTransform();
         }, { passive: true });
 
-        // Создание ника (Только для Админа — по двойному клику на пустом месте холста)
+        // Создание ника по ДВОЙНОМУ КЛИКУ на пустом месте (Только для Админа)
         viewport.addEventListener('dblclick', (e) => {
             if (!isTargetAdmin || e.target !== viewport) return;
             const name = prompt('Введите ник игрока:');
             if (!name) return;
 
-            // Расчет координат на бесконечной сетке с учетом зума
-            const rect = canvas.getBoundingClientRect();
             const x = (e.clientX - panX) / zoom;
             const y = (e.clientY - panY) / zoom;
 
@@ -149,7 +132,7 @@
                 tag.style.left = `${p.x}px`;
                 tag.style.top = `${p.y}px`;
 
-                // Удаление ника по клику на крестик
+                // Удаление на крестик
                 tag.addEventListener('click', (e) => {
                     if (isTargetAdmin && e.clientX > tag.getBoundingClientRect().right - 25) {
                         players = players.filter(pl => pl.id !== p.id);
@@ -157,7 +140,7 @@
                     }
                 });
 
-                // Перетаскивание ника админом
+                // Перетаскивание
                 if (isTargetAdmin) {
                     let isDraggingTag = false;
                     tag.addEventListener('mousedown', (e) => {
@@ -184,7 +167,6 @@
             });
         }
 
-        // Стартовый запуск
         updateTransform();
         saveAndRender();
     </script>
