@@ -21,19 +21,16 @@
         
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; }
         #viewport:active { cursor: grabbing; }
+        #canvas { position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; will-change: transform; }
         
-        /* Исправление: Карта рендерится аппаратно с максимальным сглаживанием против мыла */
-        #canvas { 
-            position: absolute; top: 0; left: 0; width: 1px; height: 1px; transform-origin: 0 0; 
-            will-change: transform;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-        }
-        
+        /* Фикс качества: Текст рендерится аппаратно в высоком разрешении без пикселей */
         .player-tag { 
             position: absolute; font-weight: bold; white-space: nowrap; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
             padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1;
-            text-rendering: optimizeLegibility; -webkit-font-smoothing: subpixel-antialiased; -moz-osx-font-smoothing: auto;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transform: translateZ(0); /* Форсирует чистый векторный рендер видеокарты */
         }
         .admin-mode .player-tag { cursor: move; }
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
@@ -49,7 +46,6 @@
         .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; }
         .modal-box button { width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
         
-        /* Исправлено: Направляющие линии вынесены на верхний слой экрана */
         .guide-line { position: fixed; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
         #guide-h { width: 100vw; height: 1px; border-top: 1px dashed #2f80ed; left: 0; }
         #guide-v { width: 1px; height: 100vh; border-left: 1px dashed #2f80ed; top: 0; }
@@ -61,7 +57,7 @@
 </head>
 <body>
     <div id="ui-container">
-        <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать file карты</button><button id="admin-btn">Войти как Admin</button></div>
+        <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
     </div>
     <button id="mobile-add-btn">+</button>
     <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Кнопка «+»: Создать ник</div>
@@ -87,7 +83,6 @@
         let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
         let isPanning = false, startX, startY, players = [];
         
-        // Переменные для глобального контроля перетаскивания ников
         let dragActive = false, dragPlayerId = null, dragElement = null;
         
         function updateTransform() { canvas.style.transform = "translate(" + panX + "px," + panY + "px) scale(" + zoom + ")"; }
@@ -126,8 +121,8 @@
             if ((e.target.classList.contains("player-tag") || e.target.parentNode.classList.contains("player-tag") || e.target.parentNode.parentNode.classList.contains("player-tag")) && isTargetAdmin) return; 
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
-        
-        // Движение карты пальцами (Смартфоны)
+
+        // Исправлено: Карта на смартфонах теперь летает идеально через e.touches[0]
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (dragActive) return;
@@ -284,7 +279,6 @@
             });
         }
 
-        // Чистая глобальная математика движения ников и Word-выравнивания отступов
         const processDrag = (clientX, clientY) => {
             if (!dragActive || !dragPlayerId || !dragElement) return;
             const p = players.find(pl => pl.id === dragPlayerId);
@@ -354,7 +348,7 @@
         };
 
         window.addEventListener("mousemove", e => processDrag(e.clientX, e.clientY));
-        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches.clientX, e.touches.clientY); });
+        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
         window.addEventListener("mouseup", stopDrag);
         window.addEventListener("touchend", stopDrag);
 
