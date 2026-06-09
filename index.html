@@ -5,15 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
+        /* 1) Подгружаем оригинальный пиксельный шрифт Minecraft */
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('https://cloudflare.com') format('woff'),
+                 url('https://cdnfonts.com') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none !important; -webkit-user-select: none !important; }
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: sans-serif; background: #ffffff; color: #000000; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: 'Minecraft', sans-serif; background: #ffffff; color: #000000; }
         #ui-container { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; z-index: 99999; pointer-events: none; }
         .ui-element { pointer-events: auto; }
         
-        #search-box { padding: 10px 12px; width: 140px; border: 2px solid #000000; border-radius: 6px; font-size: 14px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); user-select: text !important; -webkit-user-select: text !important; }
+        #search-box { padding: 10px 12px; width: 140px; border: 2px solid #000000; border-radius: 6px; font-size: 14px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Minecraft', sans-serif; user-select: text !important; -webkit-user-select: text !important; }
         @media(min-width: 480px) { #search-box { width: 250px; } }
         
-        #admin-btn, #save-btn { background: #000000; color: #ffffff; border: none; padding: 10px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s; margin-left: 5px; }
+        #admin-btn, #save-btn { background: #000000; color: #ffffff; border: none; padding: 10px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s; margin-left: 5px; font-family: 'Minecraft', sans-serif; }
         @media(min-width: 480px) { #admin-btn, #save-btn { padding: 10px 20px; font-size: 14px; margin-left: 10px; } }
         #admin-btn:hover, #save-btn:hover { background: #333333; }
         #admin-btn.logged-in { background: #2ecc71; color: white; cursor: default; }
@@ -23,25 +32,30 @@
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
+        /* Применяем Minecraft-стиль к никам */
         .player-tag { 
-            position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
+            position: absolute; font-family: 'Minecraft', sans-serif; font-weight: normal; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
             padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px; transform-origin: left top;
             backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d;
             text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; pointer-events: auto;
         }
         .admin-mode .player-tag { cursor: move; }
+        
+        /* Стилизация выключенного полупрозрачного ника для админа */
+        .player-tag.disabled-tag { opacity: 0.4; }
+        
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
         
-        #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
-        #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
+        #nav-tip { font-family: 'Minecraft', sans-serif; position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
+        #info-modal { font-family: 'Minecraft', sans-serif; display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; }
         .modal-box h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .modal-box p { font-size: 14px; color: #333; line-height: 1.4; word-break: break-word; }
-        .modal-box pre { background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; }
-        .modal-box button { width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
+        .modal-box pre { font-family: monospace; background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; }
+        .modal-box button { font-family: 'Minecraft', sans-serif; width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
         
         .guide-line { position: fixed; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
         #guide-h { width: 100vw; height: 1px; border-top: 1px dashed #2f80ed; left: 0; }
@@ -57,7 +71,7 @@
         <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
     </div>
     <button id="mobile-add-btn">+</button>
-    <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Удержание: Создать ник</div>
+    <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Кнопка «+»: Создать ник</div>
     <div id="viewport"><div id="canvas"></div></div>
     
     <div id="guide-h" class="guide-line"></div>
@@ -82,6 +96,11 @@
         
         let dragActive = false, dragPlayerId = null, dragElement = null;
         
+        // 3) Храним состояние клавиши Ctrl на клавиатуре
+        let isCtrlPressed = false;
+        window.addEventListener("keydown", e => { if (e.key === "Control") isCtrlPressed = true; });
+        window.addEventListener("keyup", e => { if (e.key === "Control") isCtrlPressed = false; });
+        
         function updateTransform() { renderPlayers(); }
         
         if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
@@ -98,7 +117,6 @@
                 if (r.ok) { players = await r.json(); renderPlayers(); }
             } catch (e) { console.log("Ошибка чтения файла базы."); }
         }
-
         saveBtn.addEventListener("click", () => {
             if (!isTargetAdmin) return;
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(players, null, 2));
@@ -108,56 +126,45 @@
 
         searchBox.addEventListener("input", () => {
             const q = searchBox.value.trim().toLowerCase(); if (!q) return;
-            const f = players.find(p => p.name.toLowerCase().includes(q));
+            const f = players.find(p => p.name.toLowerCase().includes(q) && (!p.hidden || isTargetAdmin));
             if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
         });
 
-        // Глобальная функция создания нового игрока
         function createNewPlayer(clientX, clientY) {
             if (!isTargetAdmin) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
             if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
             const targetX = (clientX - panX) / zoom;
             const targetY = (clientY - panY) / zoom;
-            players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1 });
+            players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1, hidden: false });
             renderPlayers();
         }
 
-        // Движение карты мышкой + Фикс зажатия для создания ника
         let mapHoldTimer;
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0 || dragActive) return;
-            
-            // Если кликнули на пустую карту, запускаем таймер долгого зажатия (1.5 сек) для создания ника
             if (e.target === viewport) {
                 mapHoldTimer = setTimeout(() => {
                     createNewPlayer(e.clientX, e.clientY);
                     isPanning = false;
                 }, 1500);
             }
-            
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
 
         window.addEventListener("mousemove", e => { 
-            clearTimeout(mapHoldTimer); // Если начали двигать мышь, отменяем создание
+            clearTimeout(mapHoldTimer);
             if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
         });
 
-        window.addEventListener("mouseup", () => {
-            clearTimeout(mapHoldTimer);
-            isPanning = false;
-        });
+        window.addEventListener("mouseup", () => { clearTimeout(mapHoldTimer); isPanning = false; });
 
-        // Восстановленный двойной клик — теперь ловит строго по вьюпорту
+        // 2) Фикс бага: Двойной клик на viewport теперь срабатывает ВСЕГДА, даже поверх невидимого canvas
         viewport.addEventListener("dblclick", e => {
             e.preventDefault();
-            if (e.target === viewport) {
-                createNewPlayer(e.clientX, e.clientY);
-            }
+            createNewPlayer(e.clientX, e.clientY);
         });
         
-        // Движение карты пальцами (Смартфоны)
         let touchStartDist = 0, touchStartZoom = 1;
         viewport.addEventListener("touchstart", e => {
             if (dragActive) return;
@@ -173,7 +180,7 @@
             if (isPanning && e.touches.length === 1) {
                 panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
             } else if (e.touches.length === 2) {
-                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                const dist = Math.hypot(e.touches.0.clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 const factor = dist / touchStartDist; const oldZoom = zoom;
                 zoom = Math.max(0.01, Math.min(30, touchStartZoom * factor));
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
@@ -212,10 +219,15 @@
                 modalBox.innerHTML += "<button id='edit-color-btn' style='background:#e67e22;margin-bottom:5px;'>Изменить цвет текста</button>";
                 modalBox.innerHTML += "<button id='edit-scale-btn' style='background:#9b59b6;margin-bottom:5px;'>Изменить масштаб текста (" + (p.scale || 1) + ")</button>";
                 modalBox.innerHTML += "<button id='edit-layer-btn' style='background:#1abc9c;margin-bottom:5px;'>Изменить слой текста (" + (p.layer !== undefined ? p.layer : 1) + ")</button>";
+                
+                // 4) Кнопка временного отключения ника для админа
+                const hideTxt = p.hidden ? "Включить видимость" : "Временно выключить ник";
+                modalBox.innerHTML += "<button id='toggle-hide-btn' style='background:#7f8c8d;margin-bottom:5px;'>" + hideTxt + "</button>";
+                
                 const pinTxt = p.pinned ? "Открепить ник" : "Закрепить ник";
                 modalBox.innerHTML += "<button id='toggle-pin-btn' style='background:#d35400;margin-bottom:10px;'>" + pinTxt + "</button>";
                 modalBox.innerHTML += "<strong>Данные из players.json:</strong>";
-                const rawInfo = { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), color: p.color || "#000000", description: p.description || "", pinned: !!p.pinned, scale: p.scale || 1, layer: p.layer !== undefined ? p.layer : 1 };
+                const rawInfo = { id: p.id, name: p.name, x: Math.round(p.x), y: Math.round(p.y), color: p.color || "#000000", description: p.description || "", pinned: !!p.pinned, scale: p.scale || 1, layer: p.layer !== undefined ? p.layer : 1, hidden: !!p.hidden };
                 modalBox.innerHTML += "<pre>" + JSON.stringify(rawInfo, null, 2) + "</pre>";
             }
 
@@ -241,6 +253,7 @@
                     const newLayer = prompt("Введите номер слоя (целое число, например: 1, 2, 0):", p.layer !== undefined ? p.layer : 1);
                     if (newLayer !== null && !isNaN(newLayer)) { p.layer = parseInt(newLayer, 10); renderPlayers(); infoModal.style.display = "none"; }
                 });
+                document.getElementById('toggle-hide-btn').addEventListener('click', () => { p.hidden = !p.hidden; renderPlayers(); infoModal.style.display = "none"; });
                 document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; });
             }
         }
@@ -249,20 +262,22 @@
             oldTags.forEach(t => t.remove());
 
             players.forEach(p => {
+                // 4) Если ник отключен админом и мы обычный игрок — полностью скрываем его
+                if (p.hidden && !isTargetAdmin) return;
+
                 const t = document.createElement("div"); t.className = "player-tag";
+                
+                // 4) Если ник скрыт, админ видит его полупрозрачным
+                if (p.hidden && isTargetAdmin) { t.classList.add("disabled-tag"); }
+                
                 t.setAttribute("data-id", p.id);
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
-                t.style.left = "0px";
-                t.style.top = "0px";
-                
-                const currentScale = (p.scale || 1) * zoom;
-                const currentX = p.x * zoom + panX;
-                const currentY = p.y * zoom + panY;
-                
-                t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
+                t.style.left = p.x + "px";
+                t.style.top = p.y + "px";
                 t.style.color = p.color || "#000000";
+                t.style.fontSize = (16 * (p.scale || 1)) + "px";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -309,60 +324,59 @@
             let snapH = false, snapV = false;
             
             p.x = targetX; p.y = targetY;
-            const currentScale = (p.scale || 1) * zoom;
-            const nextX = targetX * zoom + panX;
-            const nextY = targetY * zoom + panY;
-            dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
+            dragElement.style.left = targetX + "px"; dragElement.style.top = targetY + "px";
             
-            let currentRect = dragElement.getBoundingClientRect();
+            // 3) Если зажат CTRL, полностью пропускаем расчеты магнитов и синих линий выравнивания
+            if (!isCtrlPressed) {
+                let currentRect = dragElement.getBoundingClientRect();
 
-            players.forEach(other => {
-                if (other.id !== p.id && other.pinned) {
-                    let otherEl = canvas.querySelector(`[data-id="${other.id}"]`);
-                    if(!otherEl) return;
-                    let otherRect = otherEl.getBoundingClientRect();
+                players.forEach(other => {
+                    // Рассчитываем выравнивание только относительно ВИДИМЫХ и закрепленных ников
+                    if (other.id !== p.id && other.pinned && (!other.hidden || isTargetAdmin)) {
+                        let otherEl = canvas.querySelector(`[data-id="${other.id}"]`);
+                        if(!otherEl) return;
+                        let otherRect = otherEl.getBoundingClientRect();
 
-                    if (Math.abs(clientY - otherRect.top - otherRect.height/2) < 15) {
-                        targetY = other.y; snapH = true;
-                        guideH.style.top = (otherRect.top + otherRect.height/2) + "px"; guideH.style.display = "block";
-                    }
-                    if (Math.abs(clientX - otherRect.left - otherRect.width/2) < 15) {
-                        targetX = other.x; snapV = true;
-                        guideV.style.left = (otherRect.left + otherRect.width/2) + "px"; guideV.style.display = "block";
-                    }
-
-                    players.forEach(secondOther => {
-                        if(secondOther.id !== p.id && secondOther.id !== other.id && secondOther.pinned) {
-                            let secEl = canvas.querySelector(`[data-id="${secondOther.id}"]`);
-                            if(!secEl) return;
-                            let secRect = secEl.getBoundingClientRect();
-
-                            let standardGapX = Math.abs(otherRect.left - secRect.left);
-                            if(standardGapX > 10) {
-                                if(Math.abs(Math.abs(currentRect.left - otherRect.left) - standardGapX) < 15) {
-                                    targetX = other.x + (otherRect.left - secRect.left) / zoom;
-                                    snapV = true; guideV.style.left = currentRect.left + "px"; guideV.style.display = "block";
-                                }
-                            }
-
-                            let standardGapY = Math.abs(otherRect.top - secRect.top);
-                            if(standardGapY > 10) {
-                                if(Math.abs(Math.abs(currentRect.top - otherRect.top) - standardGapY) < 15) {
-                                    targetY = other.y + (otherRect.top - secRect.top) / zoom;
-                                    snapH = true; guideH.style.top = currentRect.top + "px"; guideH.style.display = "block";
-                                }
-                            }
+                        if (Math.abs(clientY - otherRect.top - otherRect.height/2) < 15) {
+                            targetY = other.y; snapH = true;
+                            guideH.style.top = (otherRect.top + otherRect.height/2) + "px"; guideH.style.display = "block";
                         }
-                    });
-                }
-            });
+                        if (Math.abs(clientX - otherRect.left - otherRect.width/2) < 15) {
+                            targetX = other.x; snapV = true;
+                            guideV.style.left = (otherRect.left + otherRect.width/2) + "px"; guideV.style.display = "block";
+                        }
+
+                        players.forEach(secondOther => {
+                            if(secondOther.id !== p.id && secondOther.id !== other.id && secondOther.pinned && (!secondOther.hidden || isTargetAdmin)) {
+                                let secEl = canvas.querySelector(`[data-id="${secondOther.id}"]`);
+                                if(!secEl) return;
+                                let secRect = secEl.getBoundingClientRect();
+
+                                let standardGapX = Math.abs(otherRect.left - secRect.left);
+                                if(standardGapX > 10) {
+                                    if(Math.abs(Math.abs(currentRect.left - otherRect.left) - standardGapX) < 15) {
+                                        targetX = other.x + (otherRect.left - secRect.left) / zoom;
+                                        snapV = true; guideV.style.left = currentRect.left + "px"; guideV.style.display = "block";
+                                    }
+                                }
+
+                                let standardGapY = Math.abs(otherRect.top - secRect.top);
+                                if(standardGapY > 10) {
+                                    if(Math.abs(Math.abs(currentRect.top - otherRect.top) - standardGapY) < 15) {
+                                        targetY = other.y + (otherRect.top - secRect.top) / zoom;
+                                        snapH = true; guideH.style.top = currentRect.top + "px"; guideH.style.display = "block";
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
 
             if (!snapH) guideH.style.display = "none";
             if (!snapV) guideV.style.display = "none";
             p.x = targetX; p.y = targetY;
-            const finalX = p.x * zoom + panX;
-            const finalY = p.y * zoom + panY;
-            dragElement.style.transform = "translate3d(" + finalX + "px, " + finalY + "px, 0) scale(" + currentScale + ")";
+            dragElement.style.left = p.x + "px"; dragElement.style.top = p.y + "px";
         };
 
         const stopDrag = () => {
@@ -373,7 +387,7 @@
         };
 
         window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
-        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches.clientX, e.touches.clientY); });
+        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
         window.addEventListener("mouseup", stopDrag);
         window.addEventListener("touchend", stopDrag);
 
