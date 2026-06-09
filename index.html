@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        /* 1) Подгружаем оригинальный пиксельный шрифт Minecraft */
+        /* 1) Подгружаем оригинальный шрифт Minecraft */
         @font-face {
             font-family: 'Minecraft';
-            src: url('https://cloudflare.com') format('woff'),
-                 url('https://cdnfonts.com') format('woff');
-            font-weight: normal;
-            font-style: normal;
+            src: url('https://cdnfonts.com') format('woff');
+            font-weight: normal; font-style: normal;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none !important; -webkit-user-select: none !important; }
@@ -32,7 +30,6 @@
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
-        /* Применяем Minecraft-стиль к никам */
         .player-tag { 
             position: absolute; font-family: 'Minecraft', sans-serif; font-weight: normal; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
             padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px; transform-origin: left top;
@@ -41,14 +38,13 @@
         }
         .admin-mode .player-tag { cursor: move; }
         
-        /* Стилизация выключенного полупрозрачного ника для админа */
-        .player-tag.disabled-tag { opacity: 0.4; }
+        /* 4) Полупрозрачность для скрытых ников в режиме админа */
+        .player-tag.hidden-admin { opacity: 0.35; }
         
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
-        
         #nav-tip { font-family: 'Minecraft', sans-serif; position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
         #info-modal { font-family: 'Minecraft', sans-serif; display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; }
@@ -96,7 +92,7 @@
         
         let dragActive = false, dragPlayerId = null, dragElement = null;
         
-        // 3) Храним состояние клавиши Ctrl на клавиатуре
+        // 3) Переменная для отслеживания зажатого Ctrl на ПК
         let isCtrlPressed = false;
         window.addEventListener("keydown", e => { if (e.key === "Control") isCtrlPressed = true; });
         window.addEventListener("keyup", e => { if (e.key === "Control") isCtrlPressed = false; });
@@ -159,10 +155,11 @@
 
         window.addEventListener("mouseup", () => { clearTimeout(mapHoldTimer); isPanning = false; });
 
-        // 2) Фикс бага: Двойной клик на viewport теперь срабатывает ВСЕГДА, даже поверх невидимого canvas
         viewport.addEventListener("dblclick", e => {
             e.preventDefault();
-            createNewPlayer(e.clientX, e.clientY);
+            if (e.target === viewport) {
+                createNewPlayer(e.clientX, e.clientY);
+            }
         });
         
         let touchStartDist = 0, touchStartZoom = 1;
@@ -180,7 +177,7 @@
             if (isPanning && e.touches.length === 1) {
                 panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
             } else if (e.touches.length === 2) {
-                const dist = Math.hypot(e.touches.0.clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 const factor = dist / touchStartDist; const oldZoom = zoom;
                 zoom = Math.max(0.01, Math.min(30, touchStartZoom * factor));
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
@@ -220,7 +217,7 @@
                 modalBox.innerHTML += "<button id='edit-scale-btn' style='background:#9b59b6;margin-bottom:5px;'>Изменить масштаб текста (" + (p.scale || 1) + ")</button>";
                 modalBox.innerHTML += "<button id='edit-layer-btn' style='background:#1abc9c;margin-bottom:5px;'>Изменить слой текста (" + (p.layer !== undefined ? p.layer : 1) + ")</button>";
                 
-                // 4) Кнопка временного отключения ника для админа
+                // 4) Кнопка переключения скрытия для админа
                 const hideTxt = p.hidden ? "Включить видимость" : "Временно выключить ник";
                 modalBox.innerHTML += "<button id='toggle-hide-btn' style='background:#7f8c8d;margin-bottom:5px;'>" + hideTxt + "</button>";
                 
@@ -262,22 +259,27 @@
             oldTags.forEach(t => t.remove());
 
             players.forEach(p => {
-                // 4) Если ник отключен админом и мы обычный игрок — полностью скрываем его
+                // 4) Полностью прячем ник от обычных пользователей, если он выключен админом
                 if (p.hidden && !isTargetAdmin) return;
 
                 const t = document.createElement("div"); t.className = "player-tag";
+                t.setAttribute("data-id", p.id);
                 
-                // 4) Если ник скрыт, админ видит его полупрозрачным
+                // 4) Если ник выключен, админ видит его полупрозрачным
                 if (p.hidden && isTargetAdmin) { t.classList.add("disabled-tag"); }
                 
-                t.setAttribute("data-id", p.id);
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
-                t.style.left = p.x + "px";
-                t.style.top = p.y + "px";
+                t.style.left = "0px";
+                t.style.top = "0px";
+                
+                const currentScale = (p.scale || 1) * zoom;
+                const currentX = p.x * zoom + panX;
+                const currentY = p.y * zoom + panY;
+                
+                t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
                 t.style.color = p.color || "#000000";
-                t.style.fontSize = (16 * (p.scale || 1)) + "px";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -324,14 +326,16 @@
             let snapH = false, snapV = false;
             
             p.x = targetX; p.y = targetY;
-            dragElement.style.left = targetX + "px"; dragElement.style.top = targetY + "px";
+            const currentScale = (p.scale || 1) * zoom;
+            const nextX = targetX * zoom + panX;
+            const nextY = targetY * zoom + panY;
+            dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
             
-            // 3) Если зажат CTRL, полностью пропускаем расчеты магнитов и синих линий выравнивания
+            // 3) Если зажат Ctrl, полностью игнорируем любые правила выравнивания и магниты
             if (!isCtrlPressed) {
                 let currentRect = dragElement.getBoundingClientRect();
 
                 players.forEach(other => {
-                    // Рассчитываем выравнивание только относительно ВИДИМЫХ и закрепленных ников
                     if (other.id !== p.id && other.pinned && (!other.hidden || isTargetAdmin)) {
                         let otherEl = canvas.querySelector(`[data-id="${other.id}"]`);
                         if(!otherEl) return;
@@ -376,7 +380,9 @@
             if (!snapH) guideH.style.display = "none";
             if (!snapV) guideV.style.display = "none";
             p.x = targetX; p.y = targetY;
-            dragElement.style.left = p.x + "px"; dragElement.style.top = p.y + "px";
+            const finalX = p.x * zoom + panX;
+            const finalY = p.y * zoom + panY;
+            dragElement.style.transform = "translate3d(" + finalX + "px, " + finalY + "px, 0) scale(" + currentScale + ")";
         };
 
         const stopDrag = () => {
@@ -385,6 +391,16 @@
                 guideH.style.display = "none"; guideV.style.display = "none";
             }
         };
+
+        // 2) Чтобы ники во время двойного клика не перехватывали фокус viewport, отключаем pointer-events при dblclick
+        window.addEventListener("mousedown", e => {
+            const tags = canvas.querySelectorAll('.player-tag');
+            tags.forEach(t => t.style.pointerEvents = "auto");
+        });
+        viewport.addEventListener("dblclick", e => {
+            const tags = canvas.querySelectorAll('.player-tag');
+            tags.forEach(t => t.style.pointerEvents = "none");
+        });
 
         window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
         window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches[0].clientX, e.touches[0].clientY); });
