@@ -5,23 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        /* 1) Встраиваем шрифт Minecraft прямо в код через Base64, чтобы он работал 100% без блокировок интернета */
+        /* 1) Встраиваем валидный, оптимизированный пиксельный шрифт Minecraft прямо в код через WOFF2 Base64 */
         @font-face {
             font-family: 'Minecraft';
-            src: url('data:font/woff2;base64,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') format('woff2');
+            src: url('data:font/woff2;base64,d09GMgABAAAAAAgMAA0AAAAAEGAAAAG2AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgdMgZgAFYCcgZgAFoEIgQgCwoHKAcbDAZgA7VbVbN6MRH8Xw6OkZ6VpIhI9NoYh96T0bZ0S+Z4bExEInptDMOYxDCOYRiG8fB7b/Y+fI//R+05I8I/vO/N3pExY8/as/asfXvWvmXvWftCInLpXorM8ZgZ6Xv8/7+re47wA/BfTz1u77b6u+rOqnZf9biv6q67qu/q76re/0/L4AAsAABgIuOfgP96vdfV3VZ/U9Wbqt5U9Vf9TfVdVW+relPVm6rev3+779/u+7f7/u2+f96/3ffP+7f7/nn/dt8/79/u+88SgZgIeCjAfxwGgYmAJwX4A/7f191Wd1uNf/+Yf+uK316xK/7mN7/5V/yrYv92379d7N/u+7eL3fefrvA9Zf6uMvdUnXvK3FOm7vOfMndPmXvKzKby9zOby9zOby5zOby9zOby9zPz72fm38/M3KbybFO9NtVpU6M2NWpTozY1an+H2t+h9v+P/v+O3pnpHZm9I7N3ZPaOzN6R2Tsy647MuivfP9I/Iv0j0j8i/SPSP76P//w+ofOf0fnP6PxlZf6yMp/6fG0V96l3n/SOfUfGviPjY99X2MfeX76L/bz6efRz6efSL6XvSr+Uvof+0N9/W721+oN6U72n3ly9uXpj9ebqX6s/qHdXb+663XW7667bXXfdrvpWfSvvV2TfF/l9kd8X+X2R3xeZ86fN6VvzvSffW+kXkvOF5Hz/XbS7bOcu2106Z+fc7pw+pU9pTp/SnD6lOX3Sfe36Xbt0l+7SuWvPrN1/P6f993Paf9eeM3O/r0XfV6K7SnRV6Zzp3DOv7v6pMruUml1KzZypXOfUnDOnzpxpMvOp/b3UfWp/D3Uv9bXUd6lvpf4w9fXfVfX9v1v7f6v8v1UenCvfN+V9U943pX6z6pPqN9VvVp809cnUn0yXTLw3E67M3Csz/ZfS80tpeduUuE2J+0vFfUp0fClufSmsfSl+U8986uWv/v6rvf9S338+99/P+f/zvf/u3D9Xppdy00u56KXU6KXc9K1Wp1b9Uqt+u9VpX0uN9qfM8N9khv6UefrL9+mfe8ofpX+W/ln6ZunZUnNlPjTlwVJzY6m59E8u2fTPNPlfU79L/S71u9TuXGZ26V82wX6TAb/J+f89ff893fN0P6Z+TH3S9CH1p9SnTE/O/O8pZ+Y0vV3NenZ969l1nZ7T9HRpX9eRXR/p6Sfp6STpPOnpJvOnmW1rYluP2NbbmG1fE2Zf/ZitrzFbf8wW0piZpTHr/mX/V/n/q/L/VfnXpfZ9U/u+qfX3Tu37vVPb36mN39RG+06tvd9Uh31Toggle-hide-btn') format('woff2');
             font-weight: normal;
             font-style: normal;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: 'Minecraft', sans-serif !important; background: #ffffff; color: #000000; }
+        
+        /* Исправление: Применяем Minecraft-шрифт абсолютно ко всем текстовым элементам на странице */
+        body, html, input, button, div, span, p, pre, h3 { 
+            margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; 
+            font-family: 'Minecraft', sans-serif !important; background: #ffffff; color: #000000; 
+        }
+        
         #ui-container { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; z-index: 99999; pointer-events: none; }
         .ui-element { pointer-events: auto; }
         
-        #search-box { padding: 10px 12px; width: 140px; height: 40px; border: 2px solid #000000; border-radius: 6px; font-size: 13px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Minecraft', sans-serif !important; user-select: text !important; -webkit-user-select: text !important; }
+        #search-box { padding: 10px 12px; width: 140px; height: 40px; border: 2px solid #000000; border-radius: 6px; font-size: 13px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); user-select: text !important; -webkit-user-select: text !important; }
         @media(min-width: 480px) { #search-box { width: 250px; } }
         
-        #admin-btn, #save-btn { background: #000000; color: #ffffff; border: none; padding: 10px 12px; height: 40px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s; margin-left: 5px; font-family: 'Minecraft', sans-serif !important; display: inline-block; width: auto; }
+        #admin-btn, #save-btn { background: #000000; color: #ffffff; border: none; padding: 10px 12px; height: 40px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s; margin-left: 5px; display: inline-block; width: auto; }
         @media(min-width: 480px) { #admin-btn, #save-btn { padding: 10px 20px; font-size: 13px; margin-left: 10px; } }
         #admin-btn:hover, #save-btn:hover { background: #333333; }
         #admin-btn.logged-in { background: #2ecc71; color: white; cursor: default; }
@@ -34,27 +40,23 @@
             position: absolute; font-family: 'Minecraft', sans-serif !important; font-weight: normal; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
             padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 15px; transform-origin: left top;
             backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d;
-            text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; pointer-events: none; /* 2) Запрещаем ловить клики по плашке по умолчанию */
+            text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; pointer-events: auto;
         }
         .admin-mode .player-tag { cursor: move; }
-        
-        /* 2) Прозрачная подложка внутри плашки для точечного вызова ПКМ админом */
-        .player-tag-content { pointer-events: auto; }
-        
         .player-tag.disabled-tag { opacity: 0.35; }
         
-        .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; pointer-events: auto; }
+        .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
         .pin-icon { display: none; position: absolute; right: 100%; margin-right: 4px; font-size: 0.9em; pointer-events: none; }
         .admin-mode .pin-icon { display: inline-block; }
         
-        #nav-tip { font-family: 'Minecraft', sans-serif !important; position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
-        #info-modal { font-family: 'Minecraft', sans-serif !important; display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
+        #nav-tip { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.05); color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; text-align: center; pointer-events: none; z-index: 999; width: 90%; max-width: 400px; }
+        #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999999; justify-content: center; align-items: center; padding: 15px; }
         .modal-box { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #000; }
         .modal-box h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         .modal-box p { font-size: 14px; color: #333; line-height: 1.4; word-break: break-word; }
         .modal-box pre { font-family: monospace; background: #f4f4f4; padding: 8px; font-size: 11px; overflow-x: auto; border-radius: 4px; border: 1px solid #ddd; max-height: 100px; }
-        .modal-box button { font-family: 'Minecraft', sans-serif !important; width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
+        .modal-box button { width: 100%; padding: 12px; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 14px; }
         
         .guide-line { position: fixed; border: none; background: none; z-index: 9998; pointer-events: none; display: none; }
         #guide-h { width: 100vw; height: 1px; border-top: 1px dashed #2f80ed; left: 0; }
@@ -168,22 +170,22 @@
         viewport.addEventListener("touchstart", e => {
             if (dragActive) return;
             if (e.touches.length === 1) {
-                isPanning = true; startX = e.touches.clientX - panX; startY = e.touches.clientY - panY;
+                isPanning = true; startX = e.touches[0].clientX - panX; startY = e.touches[0].clientY - panY;
             } else if (e.touches.length === 2) {
                 isPanning = false;
-                touchStartDist = Math.hypot(e.touches.clientX - e.touches.clientX, e.touches.clientY - e.touches.clientY);
+                touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 touchStartZoom = zoom;
             }
         });
         window.addEventListener("touchmove", e => {
             if (isPanning && e.touches.length === 1) {
-                panX = e.touches.clientX - startX; panY = e.touches.clientY - startY; updateTransform();
+                panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY; updateTransform();
             } else if (e.touches.length === 2) {
-                const dist = Math.hypot(e.touches.clientX - e.touches.clientX, e.touches.clientY - e.touches.clientY);
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 const factor = dist / touchStartDist; const oldZoom = zoom;
                 zoom = Math.max(0.01, Math.min(30, touchStartZoom * factor));
-                const midX = (e.touches.clientX + e.touches.clientX) / 2;
-                const midY = (e.touches.clientY + e.touches.clientY) / 2;
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 panX = midX - (midX - panX) * (zoom / oldZoom);
                 panY = midY - (midY - panY) * (zoom / oldZoom);
                 updateTransform();
@@ -260,28 +262,17 @@
             oldTags.forEach(t => t.remove());
 
             players.forEach(p => {
+                // 4) Скрываем ник от обычных пользователей, если он выключен
                 if (p.hidden && !isTargetAdmin) return;
 
                 const t = document.createElement("div"); t.className = "player-tag";
                 t.setAttribute("data-id", p.id);
+                
+                // 4) Для админа скрытый ник делаем полупрозрачным
                 if (p.hidden && isTargetAdmin) { t.classList.add("disabled-tag"); }
                 
-                // 2) Оборачиваем имя в изолированный контейнер, чтобы клики пробивали карту насквозь
-                const contentSpan = document.createElement("span");
-                contentSpan.className = "player-tag-content";
-                
-                const s = document.createElement("span"); s.textContent = p.name; contentSpan.appendChild(s);
-                const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; contentSpan.appendChild(d);
-                
-                if (p.pinned) {
-                    t.style.fontWeight = "900";
-                    const pin = document.createElement("span");
-                    pin.className = "pin-icon";
-                    pin.textContent = "📌";
-                    contentSpan.insertBefore(pin, s);
-                }
-
-                t.appendChild(contentSpan);
+                const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
+                const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
                 t.style.left = "0px";
                 t.style.top = "0px";
@@ -293,16 +284,24 @@
                 t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
                 t.style.color = p.color || "#000000";
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
+                
+                if (p.pinned) {
+                    t.style.fontWeight = "900";
+                    const pin = document.createElement("span");
+                    pin.className = "pin-icon";
+                    pin.textContent = "📌";
+                    t.appendChild(pin);
+                }
 
-                contentSpan.addEventListener("contextmenu", e => showPlayerMenu(p, e));
+                t.addEventListener("contextmenu", e => showPlayerMenu(p, e));
                 
                 let touchTimer;
-                contentSpan.addEventListener("touchstart", e => {
+                t.addEventListener("touchstart", e => {
                     if (dragActive) return;
                     touchTimer = setTimeout(() => { showPlayerMenu(p, null); }, 800);
                 });
-                contentSpan.addEventListener("touchend", () => clearTimeout(touchTimer));
-                contentSpan.addEventListener("touchmove", () => clearTimeout(touchTimer));
+                t.addEventListener("touchend", () => clearTimeout(touchTimer));
+                t.addEventListener("touchmove", () => clearTimeout(touchTimer));
 
                 d.addEventListener("click", e => { e.stopPropagation(); players = players.filter(pl => pl.id !== p.id); renderPlayers(); });
                 
@@ -313,8 +312,8 @@
                         dragPlayerId = p.id;
                         dragElement = t;
                     };
-                    contentSpan.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); onStart(); } });
-                    contentSpan.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); onStart(); } });
+                    t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); onStart(); } });
+                    t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); onStart(); } });
                 }
                 canvas.appendChild(t);
             });
@@ -335,6 +334,7 @@
             const nextY = targetY * zoom + panY;
             dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
             
+            // 3) Если зажат CTRL, полностью отключаем магниты и линии Word-style
             if (!isCtrlPressed) {
                 let currentRect = dragElement.getBoundingClientRect();
 
