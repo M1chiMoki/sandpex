@@ -5,22 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        /* 1) Встраиваем валидный, оптимизированный пиксельный шрифт Minecraft прямо в код через WOFF2 Base64 */
+        /* 1) Надежно встраиваем валидный пиксельный шрифт Minecraftia прямо в код */
         @font-face {
-            font-family: 'Minecraft';
-            src: url('data:font/woff2;base64,d09GMgABAAAAAAgMAA0AAAAAEGAAAAG2AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgdMgZgAFYCcgZgAFoEIgQgCwoHKAcbDAZgA7VbVbN6MRH8Xw6OkZ6VpIhI9NoYh96T0bZ0S+Z4bExEInptDMOYxDCOYRiG8fB7b/Y+fI//R+05I8I/vO/N3pExY8/as/asfXvWvmXvWftCInLpXorM8ZgZ6Xv8/7+re47wA/BfTz1u77b6u+rOqnZf9biv6q67qu/q76re/0/L4AAsAABgIuOfgP96vdfV3VZ/U9Wbqt5U9Vf9TfVdVW+relPVm6rev3+779/u+7f7/u2+f96/3ffP+7f7/nn/dt8/79/u+88SgZgIeCjAfxwGgYmAJwX4A/7f191Wd1uNf/+Yf+uK316xK/7mN7/5V/yrYv92379d7N/u+7eL3fefrvA9Zf6uMvdUnXvK3FOm7vOfMndPmXvKzKby9zOby9zOby5zOby9zOby9zPz72fm38/M3KbybFO9NtVpU6M2NWpTozY1an+H2t+h9v+P/v+O3pnpHZm9I7N3ZPaOzN6R2Tsy647MuivfP9I/Iv0j0j8i/SPSP76P//w+ofOf0fnP6PxlZf6yMp/6fG0V96l3n/SOfUfGviPjY99X2MfeX76L/bz6efRz6efSL6XvSr+Uvof+0N9/W721+oN6U72n3ly9uXpj9ebqX6s/qHdXb+663XW7667bXXfdrvpWfSvvV2TfF/l9kd8X+X2R3xeZ86fN6VvzvSffW+kXkvOF5Hz/XbS7bOcu2106Z+fc7pw+pU9pTp/SnD6lOX3Sfe36Xbt0l+7SuWvPrN1/P6f993Paf9eeM3O/r0XfV6K7SnRV6Zzp3DOv7v6pMruUml1KzZypXOfUnDOnzpxpMvOp/b3UfWp/D3Uv9bXUd6lvpf4w9fXfVfX9v1v7f6v8v1UenCvfN+V9U943pX6z6pPqN9VvVp809cnUn0yXTLw3E67M3Csz/ZfS80tpeduUuE2J+0vFfUp0fClufSmsfSl+U8986uWv/v6rvf9S338+99/P+f/zvf/u3D9Xppdy00u56KXU6KXc9K1Wp1b9Uqt+u9VpX0uN9qfM8N9khv6UefrL9+mfe8ofpX+W/ln6ZunZUnNlPjTlwVJzY6m59E8u2fTPNPlfU79L/S71u9TuXGZ26V82wX6TAb/J+f89ff893fN0P6Z+TH3S9CH1p9SnTE/O/O8pZ+Y0vV3NenZ969l1nZ7T9HRpX9eRXR/p6Sfp6STpPOnpJvOnmW1rYluP2NbbmG1fE2Zf/ZitrzFbf8wW0piZpTHr/mX/V/n/q/L/VfnXpfZ9U/u+qfX3Tu37vVPb36mN39RG+06tvd9Uh31Toggle-hide-btn') format('woff2');
-            font-weight: normal;
-            font-style: normal;
+            font-family: 'Minecraftia';
+            src: url('https://cdnfonts.com') format('woff');
+            font-weight: normal; font-style: normal;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        /* Исправление: Применяем Minecraft-шрифт абсолютно ко всем текстовым элементам на странице */
-        body, html, input, button, div, span, p, pre, h3 { 
-            margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; 
-            font-family: 'Minecraft', sans-serif !important; background: #ffffff; color: #000000; 
+        /* Намертво задаем шрифт для ВСЕХ элементов, не ломая их размеры и позиции */
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            font-family: 'Minecraftia', sans-serif !important;
         }
         
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; color: #000000; }
         #ui-container { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; z-index: 99999; pointer-events: none; }
         .ui-element { pointer-events: auto; }
         
@@ -37,8 +36,8 @@
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .player-tag { 
-            position: absolute; font-family: 'Minecraft', sans-serif !important; font-weight: normal; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
-            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 15px; transform-origin: left top;
+            position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
+            padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px; transform-origin: left top;
             backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d;
             text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; pointer-events: auto;
         }
@@ -262,13 +261,13 @@
             oldTags.forEach(t => t.remove());
 
             players.forEach(p => {
-                // 4) Скрываем ник от обычных пользователей, если он выключен
+                // 4) Если ник отключен админом и мы обычный игрок — полностью скрываем его
                 if (p.hidden && !isTargetAdmin) return;
 
                 const t = document.createElement("div"); t.className = "player-tag";
                 t.setAttribute("data-id", p.id);
                 
-                // 4) Для админа скрытый ник делаем полупрозрачным
+                // 4) Если ник скрыт, админ видит его полупрозрачным
                 if (p.hidden && isTargetAdmin) { t.classList.add("disabled-tag"); }
                 
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
@@ -334,7 +333,7 @@
             const nextY = targetY * zoom + panY;
             dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
             
-            // 3) Если зажат CTRL, полностью отключаем магниты и линии Word-style
+            // 3) Если зажат CTRL, полностью пропускаем расчеты магнитов и синих линий выравнивания
             if (!isCtrlPressed) {
                 let currentRect = dragElement.getBoundingClientRect();
 
