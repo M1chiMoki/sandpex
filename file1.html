@@ -88,7 +88,7 @@
 <body>
 
     <div id="game-stage">
-        <audio id="boss-audio" src="bossmusic.mp3" loop prefetch="auto"></audio>
+        <audio id="boss-audio" src="file1b.mp3" loop prefetch="auto"></audio>
         <button id="settings-btn">⏸</button>
         <div id="ready-banner">Are you ready?</div>
         
@@ -722,10 +722,27 @@
             }, 50);
         }
 
+        function getBotSpeed() {
+            if (playerScore === 255) return 40.0;
+            if (playerScore >= 250) return 12.0 + (playerScore - 250) * 0.15;
+            if (playerScore >= 200) return 6.0;
+            if (playerScore >= 100) return 5.2;
+            if (playerScore >= 50)  return 4.5;
+            if (playerScore >= 25)  return 3.8;
+            return 3.2;
+        }
+
         document.getElementById("retry-btn").addEventListener("click", triggerFullReset);
         document.getElementById("back-btn").addEventListener("click", () => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             clearHardcoreElements(); removeAsh(); window.location.href = "index.html";
+        });
+
+        settingsBtn.addEventListener("click", () => {
+            if (!gameActive) return;
+            inPause = true;
+            consoleOverlay.style.display = "flex";
+            cheatInput.focus();
         });
 
         initGame();
