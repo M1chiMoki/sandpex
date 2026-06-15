@@ -140,6 +140,7 @@
         let gameActive = false;
         let inPause = false;
         let godModeActive = false; 
+        let isBotFrozen = false;
 
         let obstacles = [];
         let redOrbs = [];
@@ -180,15 +181,17 @@
             const code = cheatInput.value.trim().toLowerCase();
             
             const cheatMap = {
-                "mjv4dGVzdA==": () => { playerScore = 25; },   // 25xtest
-                "NTB4dGVzdA==": () => { playerScore = 50; },   // 50xtest
-                "MTAweHRlc3Q=": () => { playerScore = 100; }, // 100xtest
-                "MjAweHRlc3Q=": () => { playerScore = 200; }, // 200xtest
-                "MjQ5eHRlc3Q=": () => { playerScore = 249; }, // 249xtest
-                "MjUweHRlc3Q=": () => { playerScore = 250; }, // 250xtest
-                "MjU2eHRlc3Q=": () => { playerScore = 255; }, // 256xtest
-                "Z29kdGVzdA==": () => { godModeActive = true; },   // godtest
-                "bW9ydGFsdGVzdA==": () => { godModeActive = false; } // mortaltest
+                "mjv4dGVzdA==": () => { playerScore = 25; },   
+                "NTB4dGVzdA==": () => { playerScore = 50; },   
+                "MTAweHRlc3Q=": () => { playerScore = 100; }, 
+                "MjAweHRlc3Q=": () => { playerScore = 200; }, 
+                "MjQ5eHRlc3Q=": () => { playerScore = 249; }, 
+                "MjUweHRlc3Q=": () => { playerScore = 250; }, 
+                "MjU2eHRlc3Q=": () => { playerScore = 255; }, 
+                "Z29kdGVzdA==": () => { godModeActive = true; },   
+                "bW9ydGFsdGVzdA==": () => { godModeActive = false; },
+                "ZnJlZXplYm90": () => { isBotFrozen = true; },
+                "dW5mcmVlemVib3Q=": () => { isBotFrozen = false; }
             };
 
             const encoded = btoa(code);
@@ -306,11 +309,11 @@
 
         function getBotSpeed() {
             if (playerScore >= 250) { return 12.0 + (playerScore - 250) * 0.15; }
-            if (playerScore >= 200) return 12.0;
-            if (playerScore >= 100) return 9.0;
-            if (playerScore >= 50)  return 6.5;
-            if (playerScore >= 25)  return 5.0;
-            return 3.5;
+            if (playerScore >= 200) return 6.0;
+            if (playerScore >= 100) return 5.2;
+            if (playerScore >= 50)  return 4.5;
+            if (playerScore >= 25)  return 3.8;
+            return 3.2;
         }
 
         function triggerEpicTransition() {
@@ -346,6 +349,7 @@
             playerScore = 0;
             botScore = 0;
             godModeActive = false;
+            isBotFrozen = false;
             scorePlayerEl.textContent = "0";
             scoreBotEl.textContent = "0";
             overlay.style.display = "none";
@@ -481,15 +485,17 @@
                     }
                 }
 
-                let botCenter = botX + (botWidth / 2);
-                let ballCenter = ballX + 10;
-                let botSpeed = getBotSpeed();
+                if (!isBotFrozen) {
+                    let botCenter = botX + (botWidth / 2);
+                    let ballCenter = ballX + 10;
+                    let botSpeed = getBotSpeed();
 
-                if (ballSpeedY < 0) {
-                    if (botCenter < ballCenter - 8) botX += botSpeed;
-                    else if (botCenter > ballCenter + 8) botX -= botSpeed;
-                    botX = Math.max(0, Math.min(900 - botWidth, botX)); 
-                    botEl.style.left = botX + "px";
+                    if (ballSpeedY < 0) {
+                        if (botCenter < ballCenter - 8) botX += botSpeed;
+                        else if (botCenter > ballCenter + 8) botX -= botSpeed;
+                        botX = Math.max(0, Math.min(900 - botWidth, botX)); 
+                        botEl.style.left = botX + "px";
+                    }
                 }
 
                 if (ballSpeedY < 0 && ballY <= 65 && ballY >= 30) {
