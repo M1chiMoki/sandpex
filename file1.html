@@ -15,7 +15,6 @@
         
         #game-stage { width: 900px; height: 600px; border: 4px solid #000000; position: relative; background: #fafafa; overflow: hidden; display: block; transition: background 0.5s ease; }
         
-        /* Визуальные декорации ада на 250+ уровне */
         #game-stage.boss-mode {
             animation: borderNeon 5s linear infinite, bgGlitch 4s ease-in-out infinite alternate;
         }
@@ -32,20 +31,16 @@
             100% { background: #ebd5d5; }
         }
         
-        /* Платформы: убран CSS transition, чтобы убрать задержки и лаги за мышкой */
-        .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; }
+        /* Фиксированные размеры для исключения фризов при замере offsetWidth */
+        .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; width: 160px; overflow: hidden; text-overflow: ellipsis; }
         .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); bottom: 30px; }
         .bot-paddle { color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; }
         
         #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; }
         
-        /* Стили для хаотичных черных ников обычных игроков (пепла) */
         .glitch-tag { position: absolute; font-weight: bold; font-size: 14px; color: #000000; border: 2px solid #000000; background: rgba(0, 0, 0, 0.08); padding: 4px 8px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 5; }
-        
-        /* Стили для вредоносных красных орбов */
         .red-orb { position: absolute; font-size: 22px; font-weight: 900; color: #ff003c; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none; z-index: 6; }
         
-        /* Предупреждающий мигающий баннер Are you ready? */
         #ready-banner { display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #ff003c; letter-spacing: 2px; animation: pulse 0.5s ease-in-out infinite alternate; z-index: 10; }
         @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -53,6 +48,9 @@
         #score-player { color: #0056ff; }
         #score-divider { color: #000000; }
         #score-bot { color: #ff003c; }
+        
+        /* Стили секретной строки ввода чит-кодов по кнопке H */
+        #cheat-box { display: none; position: absolute; top: 20px; left: 20px; padding: 8px 12px; width: 180px; height: 36px; border: 2px solid #ff0059; border-radius: 6px; font-size: 12px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 15px rgba(255, 0, 89, 0.2); z-index: 9999; user-select: text !important; }
         
         #screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
         #screen-overlay h2 { font-size: 28px; margin-bottom: 20px; }
@@ -66,21 +64,22 @@
 <body>
 
     <div id="game-stage">
+        <input type="text" id="cheat-box" placeholder="Введи код...">
         <div id="ready-banner">Are you ready?</div>
         <div id="scoreboard">
             <span id="score-player">0</span>
             <span id="score-divider">:</span>
             <span id="score-bot">0</span>
         </div>
-        <div id="player" class="paddle player-paddle"></div>
-        <div id="bot" class="paddle bot-paddle"></div>
+        <div id="player" class="paddle player-paddle">Mendaly</div>
+        <div id="bot" class="paddle bot-paddle">SadFile</div>
         <div id="ball">O</div>
-        
-        <div id="screen-overlay">
-            <h2 id="overlay-title">Вы проиграли!</h2>
-            <button class="btn" id="retry-btn">Попробовать еще</button>
-            <button class="btn" id="back-btn">Назад</button>
-        </div>
+    </div>
+
+    <div id="screen-overlay">
+        <h2 id="overlay-title">Вы проиграли!</h2>
+        <button class="btn" id="retry-btn">Попробовать еще</button>
+        <button class="btn" id="back-btn">Назад</button>
     </div>
 
     <div id="transition-curtain"></div>
@@ -99,40 +98,60 @@
         const overlay = document.getElementById("screen-overlay");
         const curtain = document.getElementById("transition-curtain");
         const readyBanner = document.getElementById("ready-banner");
+        const cheatBox = document.getElementById("cheat-box");
         
         let ballX = 440, ballY = 290, ballSpeedX = 4, ballSpeedY = 3;
-        let playerX = 380, botX = 380;
+        let playerX = 370, botX = 370;
         const paddleHeight = 35;
-        let playerWidth = 120, botWidth = 120;
+        const playerWidth = 160, botWidth = 160; // Стабильные жесткие хитбоксы
         let gameActive = false;
         let inPause = false;
 
         let obstacles = [];
         let redOrbs = [];
 
-        // Скрытый клавиатурный ввод чит-кодов
-        let inputBuffer = "";
+        // Появление скрытой строки ввода по нажатию "H"
         window.addEventListener("keydown", e => {
-            if (e.key.length === 1) {
-                inputBuffer += e.key.toLowerCase();
-                if (inputBuffer.length > 20) inputBuffer = inputBuffer.slice(-20);
+            if (e.key === "h" || e.key === "H" || e.key === "р" || e.key === "Р") {
+                // Если фокус не в инпуте, то переключаем его видимость
+                if (document.activeElement !== cheatBox) {
+                    e.preventDefault();
+                    if (cheatBox.style.display === "block") {
+                        cheatBox.style.display = "none";
+                        cheatBox.blur();
+                    } else {
+                        cheatBox.style.display = "block";
+                        cheatBox.focus();
+                    }
+                }
+            }
+        });
+
+        // Обработка отправки чит-кода по Enter
+        cheatBox.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                const code = cheatBox.value.trim().toLowerCase();
+                const validCodes =;
                 
-                const codes =;
-                codes.forEach(scoreValue => {
-                    if (inputBuffer.endsWith(scoreValue + "xtest")) {
+                validCodes.forEach(scoreValue => {
+                    if (code === scoreValue + "xtest") {
                         playerScore = (scoreValue === 256) ? 255 : scoreValue;
                         scorePlayerEl.textContent = playerScore;
                         if (playerScore >= 250) stage.classList.add("boss-mode");
                         else stage.classList.remove("boss-mode");
-                        inputBuffer = "";
                     }
                 });
+                
+                // Прячем и очищаем поле ввода после использования
+                cheatBox.value = "";
+                cheatBox.style.display = "none";
+                cheatBox.blur();
             }
         });
 
         async function initGame() {
             try {
-                const r = await fetch("players.json");
+                const r = await fetch("players.json?t=" + Date.now(), { cache: "no-store" });
                 if (r.ok) {
                     const all = await r.json();
                     legends = all.filter(p => p.layer === 2 || p.description === "Легенда");
@@ -150,21 +169,19 @@
             playerEl.textContent = getRandomLegend();
             botEl.textContent = getRandomLegend();
             
-            setTimeout(() => {
-                playerWidth = playerEl.offsetWidth || 120;
-                botWidth = botEl.offsetWidth || 120;
-                resetPositions();
-                gameActive = true;
-                requestAnimationFrame(gameLoop);
-            }, 50);
+            resetPositions();
+            gameActive = true;
+            requestAnimationFrame(gameLoop);
         }
 
         function getRandomLegend() {
-            return legends[Math.floor(Math.random() * legends.length)].name;
+            const index = Math.floor(Math.random() * legends.length);
+            return legends[index].name;
         }
 
         function getRandomOrdinary() {
-            return ordinaryPlayers[Math.floor(Math.random() * ordinaryPlayers.length)].name;
+            const index = Math.floor(Math.random() * ordinaryPlayers.length);
+            return ordinaryPlayers[index].name;
         }
 
         function resetPositions() {
@@ -177,7 +194,6 @@
             }
             playerX = 450 - (playerWidth / 2);
             botX = 450 - (botWidth / 2);
-            
             playerEl.style.left = playerX + "px";
             botEl.style.left = botX + "px";
         }
@@ -204,12 +220,11 @@
             el.textContent = getRandomOrdinary();
             stage.appendChild(el);
 
-            const width = el.offsetWidth || 100;
             obstacles.push({
                 el: el,
-                x: Math.random() * (900 - width),
+                x: Math.random() * (900 - 120),
                 y: 120 + Math.random() * 250,
-                width: width,
+                width: 120,
                 height: 30,
                 speedX: (Math.random() * 2 - 1) * 1.5,
                 speedY: (Math.random() * 2 - 1) * 0.8,
@@ -242,34 +257,6 @@
             if (playerScore >= 50)  return 6.5;  
             if (playerScore >= 25)  return 5.0;  
             return 3.5;                          
-        }
-
-        function triggerEpicTransition() {
-            gameActive = false;
-            clearHardcoreElements();
-            curtain.style.display = "grid";
-            curtain.innerHTML = "";
-            const totalBlocks = 400;
-            
-            for(let i = 0; i < totalBlocks; i++) {
-                let div = document.createElement("div");
-                div.className = "black-block";
-                curtain.appendChild(div);
-            }
-            
-            const blocks = Array.from(document.querySelectorAll(".black-block"));
-            blocks.sort(() => Math.random() - 0.5);
-            
-            blocks.forEach((block, index) => {
-                setTimeout(() => {
-                    block.style.opacity = "1";
-                    if (index === blocks.length - 1) {
-                        setTimeout(() => {
-                            window.location.href = "file2.html";
-                        }, 500);
-                    }
-                }, index * 3);
-            });
         }
         function handleGoal(isPlayerGoal) {
             inPause = true;
@@ -307,19 +294,42 @@
 
             setTimeout(() => {
                 readyBanner.style.display = "none";
-                // Смена ников происходит не при столкновении, а при забитии гола случайным образом
+                // Ники меняются только при забитии гола абсолютно случайно
                 playerEl.textContent = getRandomLegend();
                 botEl.textContent = getRandomLegend();
                 
-                setTimeout(() => {
-                    playerWidth = playerEl.offsetWidth || 120;
-                    botWidth = botEl.offsetWidth || 120;
-                    
-                    resetPositions();
-                    ballEl.style.display = "flex";
-                    inPause = false;
-                }, 20);
+                resetPositions();
+                ballEl.style.display = "flex";
+                inPause = false;
             }, delay); 
+        }
+
+        function triggerEpicTransition() {
+            gameActive = false;
+            clearHardcoreElements();
+            curtain.style.display = "grid";
+            curtain.innerHTML = "";
+            const totalBlocks = 400;
+            
+            for(let i = 0; i < totalBlocks; i++) {
+                let div = document.createElement("div");
+                div.className = "black-block";
+                curtain.appendChild(div);
+            }
+            
+            const blocks = Array.from(document.querySelectorAll(".black-block"));
+            blocks.sort(() => Math.random() - 0.5);
+            
+            blocks.forEach((block, index) => {
+                setTimeout(() => {
+                    block.style.opacity = "1";
+                    if (index === blocks.length - 1) {
+                        setTimeout(() => {
+                            window.location.href = "file2.html";
+                        }, 500);
+                    }
+                }, index * 3);
+            });
         }
 
         function gameLoop() {
@@ -335,7 +345,7 @@
                     if (ballX > 880) ballX = 880;
                 }
 
-                // Спавн элементов ада на 250+ уровне
+                // Спавн элементов хардкора на 250+ уровне
                 if (playerScore >= 250) {
                     if (Math.random() < 0.005) spawnObstacle();
                     if (Math.random() < 0.008) spawnRedOrb();
@@ -354,7 +364,6 @@
                     o.el.style.top = o.y + "px";
                     o.el.style.transform = `rotate(${o.angle}deg)`;
 
-                    // Столкновение мяча с летающим пеплом (ники игроков)
                     if (ballX + 20 >= o.x && ballX <= o.x + o.width && ballY + 20 >= o.y && ballY <= o.y + o.height) {
                         ballSpeedY = -ballSpeedY;
                         ballSpeedX += (Math.random() * 2 - 1) * 2; 
@@ -368,7 +377,6 @@
                     orb.el.style.left = orb.x + "px";
                     orb.el.style.top = orb.y + "px";
 
-                    // Проверка столкновения сферы смерти с синей платформой игрока
                     if (orb.y + 18 >= 535 && orb.y <= 570 && orb.x + 18 >= playerX && orb.x <= playerX + playerWidth) {
                         gameActive = false;
                         orb.el.remove();
@@ -437,14 +445,10 @@
             playerEl.textContent = getRandomLegend();
             botEl.textContent = getRandomLegend();
             
-            setTimeout(() => {
-                playerWidth = playerEl.offsetWidth || 120;
-                botWidth = botEl.offsetWidth || 120;
-                resetPositions();
-                ballEl.style.display = "flex";
-                inPause = false;
-                gameActive = true;
-            }, 50);
+            resetPositions();
+            ballEl.style.display = "flex";
+            inPause = false;
+            gameActive = true;
         });
 
         document.getElementById("back-btn").addEventListener("click", () => {
