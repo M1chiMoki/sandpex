@@ -214,7 +214,7 @@
         let ashParticles = [];
         let shatterParticles = [];
         let canvasCracks = [];
-        let crackColor = "#000000";
+        let crackColor = "#ff003c";
         let crackGlow = false;
         
         let leftRibbonY = 0, rightRibbonY = 0;
@@ -393,40 +393,79 @@
             isPadOverAttack = false;
         }
 
-        function addCanvasCrack() {
-            let startEdge = Math.floor(Math.random() * 4);
-            let sx = 0, sy = 0;
-            if (startEdge === 0) { sx = Math.random() * botWidth; sy = 0; }
-            else if (startEdge === 1) { sx = botWidth; sy = Math.random() * 35; }
-            else if (startEdge === 2) { sx = Math.random() * botWidth; sy = 35; }
-            else { sx = 0; sy = Math.random() * 35; }
+        function addStageCracks(stageNum) {
+            let cx = botWidth / 2;
+            let cy = 35 / 2;
+            
+            if (stageNum === 1) {
+                crackColor = "#ff003c";
+                for (let i = 0; i < 2; i++) {
+                    generateBranch(cx, cy, Math.random() * Math.PI * 2, 2, 12);
+                }
+            } else if (stageNum === 2) {
+                crackColor = "#ff003c";
+                let amt = 2 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < amt; i++) {
+                    generateBranch(cx, cy, Math.random() * Math.PI * 2, 3, 16);
+                }
+            } else if (stageNum === 3) {
+                crackColor = "#ff003c";
+                let amt = 3;
+                for (let i = 0; i < amt; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    generateBranch(cx, cy, angle, 3, 15, true);
+                }
+            } else if (stageNum === 4) {
+                crackColor = "#ff003c";
+                crackGlow = true;
+                let amt = 3;
+                for (let i = 0; i < amt; i++) {
+                    generateBranch(cx, cy, Math.random() * Math.PI * 2, 4, 14, true);
+                }
+                for (let i = 0; i < 4; i++) {
+                    let edgeX = Math.random() > 0.5 ? 2 : botWidth - 2;
+                    let edgeY = Math.random() * 35;
+                    let targetAngle = edgeX < cx ? 0 : Math.PI;
+                    generateBranch(edgeX, edgeY, targetAngle + (Math.random() * 1 - 0.5), 3, 10);
+                }
+            }
+            redrawCracks();
+        }
 
-            let points = [{x: sx, y: sy}];
-            let curX = sx, curY = sy;
-            let segments = 3 + Math.floor(Math.random() * 3);
+        function generateBranch(startX, startY, baseAngle, segments, maxSegmentLen, addSubBranches = false) {
+            let points = [{x: startX, y: startY}];
+            let curX = startX;
+            let curY = startY;
+            let curAngle = baseAngle;
 
             for (let i = 0; i < segments; i++) {
-                let dx = (Math.random() * 40 - 20);
-                let dy = (Math.random() * 16 - 8);
-                curX += dx; curY += dy;
+                curAngle += (Math.random() * 0.8 - 0.4);
+                let len = maxSegmentLen * (0.6 + Math.random() * 0.4);
+                curX += Math.cos(curAngle) * len;
+                curY += Math.sin(curAngle) * len;
+                
                 curX = Math.max(2, Math.min(botWidth - 2, curX));
                 curY = Math.max(2, Math.min(33, curY));
                 points.push({x: curX, y: curY});
+
+                if (addSubBranches && Math.random() < 0.35 && i < segments - 1) {
+                    let subAngle = curAngle + (Math.random() > 0.5 ? 0.7 : -0.7);
+                    generateBranch(curX, curY, subAngle, 2, maxSegmentLen * 0.5);
+                }
             }
             canvasCracks.push(points);
-            redrawCracks();
         }
 
         function redrawCracks() {
             crackCtx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
-            crackCtx.lineWidth = 2.5;
+            crackCtx.lineWidth = 1.2;
             crackCtx.lineCap = "round";
             crackCtx.lineJoin = "round";
 
             if (crackGlow) {
                 crackCtx.strokeStyle = "#ff003c";
                 crackCtx.shadowColor = "#ff003c";
-                crackCtx.shadowBlur = 8;
+                crackCtx.shadowBlur = 6;
             } else {
                 crackCtx.strokeStyle = crackColor;
                 crackCtx.shadowBlur = 0;
@@ -499,8 +538,7 @@
             
             if (attackHits <= 4) {
                 botEl.classList.add("bot-vibrate");
-                addCanvasCrack();
-                addCanvasCrack();
+                addStageCracks(attackHits);
                 
                 if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 4px #ff003c)";
                 else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) blur(0.3px)";
@@ -513,7 +551,6 @@
                 triggerThreeHeavyShakes();
             }
         });
-
         function triggerThreeHeavyShakes() {
             isFinalSequence = true;
             clearHardcoreElements();
@@ -550,7 +587,7 @@
             let targetY = 35;
             
             function animateProj() {
-                curY += 1.8;
+                curY += 1.2;
                 proj.style.transform = `translate3d(0, ${curY}px, 0)`;
                 if (curY < targetY) {
                     requestAnimationFrame(animateProj);
@@ -572,7 +609,7 @@
             ballEl.style.display = "none";
             crackCtx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
             
-            for (let i = 0; i < 55; i++) {
+            for (let i = 0; i < 65; i++) {
                 let shard = document.createElement("div");
                 shard.className = "bot-particle-shard";
                 shard.textContent = Math.random() > 0.5 ? "⚡" : "✦";
@@ -584,21 +621,29 @@
                     el: shard,
                     x: parseFloat(shard.style.left),
                     y: parseFloat(shard.style.top),
-                    vx: (Math.random() - 0.5) * 4.5,
-                    vy: (Math.random() - 0.2) * 3.5,
+                    vx: (Math.random() - 0.5) * 3.5,
+                    vy: (Math.random() - 0.3) * 2.8,
                     alpha: 1.0,
-                    fade: 0.008 + Math.random() * 0.01
+                    fade: 0.005 + Math.random() * 0.008
                 });
             }
             
             function runShatterLoop() {
                 if (shatterParticles.length === 0) {
+                    try {
+                        let perms = JSON.parse(localStorage.getItem("user_permissions") || "[]");
+                        if (!perms.includes("pingpongwin")) {
+                            perms.push("pingpongwin");
+                            localStorage.setItem("user_permissions", JSON.stringify(perms));
+                        }
+                    } catch(e) { console.error(e); }
+                    
                     triggerVictorySequence();
                     return;
                 }
                 for (let i = shatterParticles.length - 1; i >= 0; i--) {
                     let p = shatterParticles[i];
-                    p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.alpha -= p.fade;
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.alpha -= p.fade;
                     if (p.alpha <= 0) {
                         p.el.remove(); shatterParticles.splice(i, 1);
                     } else {
