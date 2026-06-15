@@ -19,9 +19,6 @@
             animation: borderNeon 5s linear infinite, bgGlitch 4s ease-in-out infinite alternate;
         }
         
-        #bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1s ease; pointer-events: none; z-index: 0; }
-        #bg-video.active { opacity: 0.25; }
-
         @keyframes borderNeon {
             0% { border-color: #ff0059; box-shadow: 0 0 15px rgba(255, 0, 89, 0.4); }
             33% { border-color: #0056ff; box-shadow: 0 0 15px rgba(0, 86, 255, 0.4); }
@@ -33,18 +30,18 @@
             50% { background: #f2e6e6; }
             100% { background: #ebd5d5; }
         }
-        .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; z-index: 10; }
+        .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; z-index: 10; pointer-events: none; }
         .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); bottom: 30px; }
         .bot-paddle { color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease; }
         
-        #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 9; }
+        #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 9; pointer-events: none; }
         
         .glitch-tag { position: absolute; font-weight: bold; font-size: 14px; color: #000000; border: 2px solid #000000; background: rgba(0, 0, 0, 0.08); padding: 4px 8px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 5; }
         .red-orb { position: absolute; font-size: 22px; font-weight: 900; color: #ff003c; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none; z-index: 6; }
         
         .ash-particle { position: absolute; width: 5px; height: 5px; background: rgba(40, 40, 40, 0.35); pointer-events: none; z-index: 2; }
         
-        .side-ribbon { position: absolute; top: 0; width: 85px; height: 100%; overflow: hidden; display: none; z-index: 1; opacity: 0.15; font-size: 10px; font-weight: bold; color: #000; }
+        .side-ribbon { position: absolute; top: 0; width: 85px; height: 100%; overflow: hidden; display: none; z-index: 1; opacity: 0.15; font-size: 10px; font-weight: bold; color: #000; pointer-events: none; }
         #left-ribbon { left: 5px; }
         #right-ribbon { right: 5px; }
         .ribbon-track { position: absolute; display: flex; flex-direction: column; width: 100%; gap: 15px; }
@@ -54,7 +51,7 @@
         .plasmatron-warn.pulse-glow { animation: warnPulse 0.25s infinite alternate; }
         @keyframes warnPulse { 0% { opacity: 0.15; } 100% { opacity: 0.65; } }
         .plasmatron-beam { background: #ff003c; box-shadow: 0 0 25px #ff003c, 0 0 45px #ff003c; }
-        #ready-banner { display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #ff003c; letter-spacing: 2px; animation: pulse 0.5s ease-in-out infinite alternate; z-index: 10; }
+        #ready-banner { display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #ff003c; letter-spacing: 2px; animation: pulse 0.5s ease-in-out infinite alternate; z-index: 10; pointer-events: none; }
         @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
 
         #scoreboard { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; font-weight: bold; letter-spacing: 5px; opacity: 0.15; pointer-events: none; display: flex; gap: 15px; z-index: 4; }
@@ -64,7 +61,7 @@
         .epic-pulse { animation: epicPulseAnim 0.3s infinite alternate !important; opacity: 1 !important; font-size: 70px !important; }
         @keyframes epicPulseAnim { 0% { transform: translate(-50%, -50%) scale(0.85); color: #ff0059; } 100% { transform: translate(-50%, -50%) scale(1.25); color: #000000; } }
         
-        .attack-button-obj { position: absolute; background: #2ecc71; border: 3px solid #27ae60; color: #ffffff; font-size: 11px; font-weight: bold; padding: 6px 10px; border-radius: 4px; box-shadow: 0 0 10px #2ecc71; cursor: pointer; z-index: 8; white-space: nowrap; }
+        .attack-button-obj { position: absolute; background: #2ecc71; border: 3px solid #27ae60; color: #ffffff; font-size: 11px; font-weight: bold; padding: 6px 10px; border-radius: 4px; box-shadow: 0 0 10px #2ecc71; cursor: pointer; z-index: 8; white-space: nowrap; pointer-events: auto !important; }
 
         #settings-btn { position: absolute; top: 15px; right: 15px; width: 36px; height: 36px; background: #000000; color: #ffffff; border: 2px solid #000000; border-radius: 6px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding-bottom: 2px; z-index: 9999999 !important; pointer-events: auto !important; }
         #settings-btn:hover { background: #222222; }
@@ -76,22 +73,22 @@
         #cheat-input { flex: 1; padding: 10px; border: 2px solid #000000; border-radius: 6px; font-size: 12px; outline: none; background: #fafafa; color: #000000; text-align: center; user-select: text !important; -webkit-user-select: text !important; pointer-events: auto !important; }
         #submit-arrow-btn { width: 40px; height: 38px; background: #000000; color: #ffffff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; pointer-events: auto !important; }
         #submit-arrow-btn:hover { background: #222222; }
-        #screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
+        #screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 100000; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; pointer-events: auto !important; }
         #screen-overlay h2 { font-size: 28px; margin-bottom: 20px; }
-        .btn { background: #000; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 6px; margin: 5px; }
+        .btn { background: #000; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 6px; margin: 5px; pointer-events: auto !important; }
         .btn:hover { background: #333; }
         
-        #countdown-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
+        #countdown-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 99999; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; pointer-events: none; }
         #countdown-number { font-size: 90px; font-weight: 900; color: #000000; transform: scale(1); }
         
-        #transition-curtain { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 999999; }
-        .spiral-block { position: absolute; width: 5vw; height: 5vh; background: #000000; transform: scale(0); z-index: 9999999; }
+        #transition-curtain { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 999999; pointer-events: none; }
+        .spiral-block { position: absolute; width: 5vw; height: 5vh; background: #000000; transform: scale(0); z-index: 9999999; pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div id="game-stage">
-        <video id="bg-video" src="file1b.mp4" loop muted playsinline></video>
+        <audio id="boss-audio" src="bossmusic.mp3" loop prefetch="auto"></audio>
         <button id="settings-btn">⏸</button>
         <div id="ready-banner">Are you ready?</div>
         
@@ -156,7 +153,7 @@
         const gameTitle = document.getElementById("game-title");
         const countdownOverlay = document.getElementById("countdown-overlay");
         const countdownNumber = document.getElementById("countdown-number");
-        const bgVideo = document.getElementById("bg-video");
+        const bossAudio = document.getElementById("boss-audio");
         const leftTrack = document.getElementById("left-track");
         const rightTrack = document.getElementById("right-track");
         const plasmaZone = document.getElementById("plasma-zone");
@@ -187,6 +184,7 @@
         let attackButton = null;
         let attackHits = 0;
         let nextAttackSpawnTime = 0;
+        let isPadOverAttack = false;
         function runCountdown(callback) {
             inPause = true;
             countdownOverlay.style.display = "flex";
@@ -290,8 +288,6 @@
             if (playerScore >= 250) {
                 stage.classList.add("boss-mode");
                 gameTitle.textContent = "Преисподня";
-                bgVideo.classList.add("active");
-                bgVideo.play().catch(()=>{});
                 document.getElementById("left-ribbon").style.display = "block";
                 document.getElementById("right-ribbon").style.display = "block";
                 
@@ -316,8 +312,7 @@
             } else {
                 stage.classList.remove("boss-mode");
                 gameTitle.textContent = "sandpex — Легендарный Пинг-Понг";
-                bgVideo.classList.remove("active");
-                bgVideo.pause();
+                try { bossAudio.pause(); bossAudio.currentTime = 0; } catch(e){}
                 document.getElementById("left-ribbon").style.display = "none";
                 document.getElementById("right-ribbon").style.display = "none";
                 removeAsh();
@@ -337,6 +332,7 @@
                 attackButton.el.remove();
                 attackButton = null;
             }
+            isPadOverAttack = false;
         }
 
         function spawnAttackButton() {
@@ -381,6 +377,22 @@
             let relativeX = e.clientX - rect.left - (playerWidth / 2);
             playerX = Math.max(0, Math.min(900 - playerWidth, relativeX));
             playerEl.style.left = playerX + "px";
+        });
+
+        window.addEventListener("click", e => {
+            if (!gameActive || inPause || playerScore !== 255 || !attackButton || !isPadOverAttack) return;
+            
+            attackHits++;
+            removeAttackButton();
+            nextAttackSpawnTime = Date.now() + (7000 + Math.random() * 23000);
+            
+            if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 2px #ff003c) blur(0.3px)";
+            else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) blur(0.6px)";
+            else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(1px)";
+            else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 10px #ff003c) contrast(2) invert(0.2) blur(1.5px)";
+            else if (attackHits >= 5) {
+                triggerVictorySequence();
+            }
         });
 
         function clearHardcoreElements() {
@@ -605,18 +617,6 @@
                                 attackButton.x + attackButton.w >= playerX && attackButton.x <= playerX + playerWidth) {
                                 isPadOverAttack = true;
                                 attackButton.el.style.background = "#27ae60";
-                                
-                                attackHits++;
-                                removeAttackButton();
-                                nextAttackSpawnTime = Date.now() + (7000 + Math.random() * 23000);
-                                
-                                if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 2px #ff003c) blur(0.3px)";
-                                else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) blur(0.6px)";
-                                else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(1px)";
-                                else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 10px #ff003c) contrast(2) invert(0.2) blur(1.5px)";
-                                else if (attackHits >= 5) {
-                                    triggerVictorySequence();
-                                }
                             } else {
                                 isPadOverAttack = false;
                                 attackButton.el.style.background = "#2ecc71";
@@ -677,6 +677,10 @@
                         let hitPoint = (ballX + 10 - (playerX + playerWidth / 2)) / (playerWidth / 2);
                         ballSpeedX += hitPoint * 3; ballY = 514; 
                         playerPaddleHits++;
+
+                        if (playerScore >= 250) {
+                            try { if (bossAudio.paused) bossAudio.play().catch(()=>{}); } catch(e){}
+                        }
                     }
                 }
 
