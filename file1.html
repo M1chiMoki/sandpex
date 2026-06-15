@@ -76,7 +76,6 @@
         #cheat-input { flex: 1; padding: 10px; border: 2px solid #000000; border-radius: 6px; font-size: 12px; outline: none; background: #fafafa; color: #000000; text-align: center; user-select: text !important; -webkit-user-select: text !important; pointer-events: auto !important; }
         #submit-arrow-btn { width: 40px; height: 38px; background: #000000; color: #ffffff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; pointer-events: auto !important; }
         #submit-arrow-btn:hover { background: #222222; }
-        
         #screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
         #screen-overlay h2 { font-size: 28px; margin-bottom: 20px; }
         .btn { background: #000; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 6px; margin: 5px; }
@@ -90,6 +89,7 @@
     </style>
 </head>
 <body>
+
     <div id="game-stage">
         <video id="bg-video" src="file1b.mp4" loop muted playsinline></video>
         <button id="settings-btn">⏸</button>
@@ -113,7 +113,6 @@
             <div id="countdown-number">3</div>
         </div>
     </div>
-
     <div id="console-overlay">
         <div class="console-box">
             <div class="input-row">
@@ -124,6 +123,14 @@
             <button class="btn" id="console-close-btn" style='font-size:12px; padding:8px 16px; margin-top: 5px;'>Вернуться</button>
         </div>
     </div>
+
+    <div id="screen-overlay">
+        <h2 id="overlay-title">Вы проиграли!</h2>
+        <button class="btn" id="retry-btn">Попробовать еще</button>
+        <button class="btn" id="back-btn">Назад</button>
+    </div>
+
+    <div id="transition-curtain"></div>
 
     <script>
         let legends = [];
@@ -181,39 +188,6 @@
         let attackHits = 0;
         let nextAttackSpawnTime = 0;
         let isPadOverAttack = false;
-        function sha256Sync(str) {
-            var buffer = new TextEncoder().encode(str);
-            var words = [];
-            for (var i = 0; i < buffer.length; i++) { words[i >> 2] |= buffer[i] << (24 - (i % 4) * 8); }
-            var asciiLength = buffer.length;
-            var hash = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
-            var k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
-            words[asciiLength >> 2] |= 0x80 << (24 - (asciiLength % 4) * 8);
-            while (((words.length * 4) % 64) !== 56) { words.push(0); }
-            words.push(0); words.push(asciiLength * 8);
-            for (var j = 0; j < words.length; j += 16) {
-                var w = words.slice(j, j + 16); var oldHash = hash.slice(0);
-                for (var i = 0; i < 64; i++) {
-                    if (i >= 16) {
-                        var w15 = w[i - 15], w2 = w[i - 2];
-                        var s0 = ((w15>>>7)|(w15<<25)) ^ ((w15>>>18)|(w15<<14)) ^ (w15>>>3);
-                        var s1 = ((w2>>>17)|(w2<<15)) ^ ((w2>>>19)|(w2<<13)) ^ (w2>>>10);
-                        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
-                    }
-                    var a = hash, b = hash, c = hash, d = hash, e = hash, f = hash, g = hash, h = hash;
-                    var S1 = ((e>>>6)|(e<<26)) ^ ((e>>>11)|(e<<21)) ^ ((e>>>25)|(e<<7));
-                    var ch = (e & f) ^ ((~e) & g);
-                    var temp1 = (h + S1 + ch + k[i] + w[i]) | 0;
-                    var S0 = ((a>>>2)|(a<<30)) ^ ((a>>>13)|(a<<19)) ^ ((a>>>22)|(a<<10));
-                    var maj = (a & b) ^ (a & c) ^ (b & c);
-                    var temp2 = (S0 + maj) | 0;
-                    hash = [(temp1 + temp2) | 0, a, b, c, (d + temp1) | 0, e, f, g];
-                }
-                for (var i = 0; i < 8; i++) { hash[i] = (hash[i] + oldHash[i]) | 0; }
-            }
-            return hash.map(function(val) { var s = (val >>> 0).toString(16); while (s.length < 8) s = '0' + s; return s; }).join('');
-        }
-
         function runCountdown(callback) {
             inPause = true;
             countdownOverlay.style.display = "flex";
@@ -234,22 +208,24 @@
 
         function executeCheatCheck() {
             const code = cheatInput.value.trim().toLowerCase();
-            const hashed = sha256Sync(code);
             const cheatMap = {
-                "3be059f032252a17088924b179294248aa6180a52df0fae627c2fe6681b95b87": () => { playerScore = 25; },
-                "ea66f77ccb02e70e9a7e6ff8161b94ea9c07e05fc8645e7fdb0ea628f26db9cc": () => { playerScore = 50; },
-                "d5d5945ec598f4e24ee7662c1be833efdcd38fe4b8b6f3a7633cc47da0cc3283": () => { playerScore = 100; },
-                "cb25bfd33f7c32bf28d098e945fe96b1853da99bc6e7f223f6685fb1ee3ff5fb": () => { playerScore = 200; },
-                "0f45512ae30c5e7b399ccbc4ca355df040a43057187c53e83918a5df9775be37": () => { playerScore = 249; },
-                "d4eb20fc5ba98db5f40f09ee395dc3d97ba23c914da7dbca03b9b478335f606a": () => { playerScore = 250; },
-                "d72d633e08fbe7d507b949fefee4a6136fa513da19bc0195ee88301cf1294875": () => { playerScore = 255; },
-                "fcd48911bfdf013bfd3f18e95df1881cf71cf70ff22b8ff34f2d34199c0f994a": () => { godModeActive = true; },
-                "a19ca4d9247eb97bd0b3294326532d56d9539d4825dd8b8352614b62095f9227": () => { godModeActive = false; },
+                "mjv4dGVzdA==": () => { playerScore = 25; },   
+                "NTB4dGVzdA==": () => { playerScore = 50; },   
+                "MTAweHRlc3Q=": () => { playerScore = 100; }, 
+                "MjAweHRlc3Q=": () => { playerScore = 200; }, 
+                "MjQ5eHRlc3Q=": () => { playerScore = 249; }, 
+                "MjUweHRlc3Q=": () => { playerScore = 250; }, 
+                "MjU6eHRlc3Q=": () => { playerScore = 255; }, 
+                "Z29kdGVzdA==": () => { godModeActive = true; },   
+                "bW9ydGFsdGVzdA==": () => { godModeActive = false; },
                 "ZnJlZXplYm90": () => { isBotFrozen = true; },
                 "dW5mcmVlemVib3Q=": () => { isBotFrozen = false; }
             };
-            if (cheatMap[hashed] !== undefined) {
-                cheatMap[hashed]();
+
+            const encoded = btoa(code);
+
+            if (cheatMap[encoded] !== undefined) {
+                cheatMap[encoded]();
                 scorePlayerEl.textContent = playerScore;
                 updateBossEnvironment();
                 clearHardcoreElements();
@@ -354,7 +330,6 @@
                 botEl.style.filter = "none";
             }
         }
-
         function removeAsh() {
             ashParticles.forEach(p => p.el.remove());
             ashParticles = [];
@@ -367,6 +342,7 @@
             }
             isPadOverAttack = false;
         }
+
         function spawnAttackButton() {
             if (attackButton) return;
             let el = document.createElement("div");
