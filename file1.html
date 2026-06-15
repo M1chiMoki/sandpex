@@ -39,12 +39,12 @@
         .glitch-tag { position: absolute; font-weight: bold; font-size: 14px; color: #000000; border: 2px solid #000000; background: rgba(0, 0, 0, 0.08); padding: 4px 8px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 5; }
         .red-orb { position: absolute; font-size: 22px; font-weight: 900; color: #ff003c; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none; z-index: 6; }
         
-        .ash-particle { position: absolute; width: 5px; height: 5px; background: rgba(40, 40, 40, 0.35); pointer-events: none; z-index: 2; }
+        .ash-particle { position: absolute; width: 5px; height: 5px; background: rgba(40, 40, 40, 0.35); pointer-events: none; z-index: 2; will-change: transform; }
         
         .side-ribbon { position: absolute; top: 0; width: 85px; height: 100%; overflow: hidden; display: none; z-index: 1; opacity: 0.15; font-size: 10px; font-weight: bold; color: #000; pointer-events: none; }
         #left-ribbon { left: 5px; }
         #right-ribbon { right: 5px; }
-        .ribbon-track { position: absolute; display: flex; flex-direction: column; width: 100%; gap: 15px; }
+        .ribbon-track { position: absolute; display: flex; flex-direction: column; width: 100%; gap: 15px; will-change: transform; }
         
         .plasmatron-zone { position: absolute; top: 0; height: 100%; display: none; z-index: 3; pointer-events: none; }
         .plasmatron-warn { background: rgba(255, 0, 60, 0.15); border-left: 2px dashed #ff003c; border-right: 2px dashed #ff003c; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #ff003c; font-weight: 900; }
@@ -536,14 +536,14 @@
                 if (playerScore >= 250) {
                     leftRibbonY -= 1.5; if (leftRibbonY <= -400) leftRibbonY = 0;
                     rightRibbonY += 1.5; if (rightRibbonY >= 400) rightRibbonY = 0;
-                    leftTrack.style.transform = `translateY(${leftRibbonY}px)`;
-                    rightTrack.style.transform = `translateY(${rightRibbonY}px)`;
+                    leftTrack.style.transform = `translate3d(0, ${leftRibbonY}px, 0)`;
+                    rightTrack.style.transform = `translate3d(0, ${rightRibbonY}px, 0)`;
                     
                     ashParticles.forEach(p => {
                         p.x += p.speedX; p.y += p.speedY;
                         if (p.y > 600) { p.y = -10; p.x = Math.random() * 900; }
                         if (p.x < 0 || p.x > 900) p.speedX = -p.speedX;
-                        p.el.style.left = p.x + "px"; p.el.style.top = p.y + "px";
+                        p.el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
                     });
 
                     if (Math.random() < 0.005) spawnObstacle();
