@@ -59,6 +59,20 @@
             font-weight: 900 !important;
         }
         
+        .rainbow-active {
+            animation: rainbowAnim 4s linear infinite !important;
+        }
+        
+        @keyframes rainbowAnim {
+            0% { color: #ff0000; }
+            17% { color: #ffa500; }
+            33% { color: #ffff00; }
+            50% { color: #008000; }
+            67% { color: #0000ff; }
+            83% { color: #4b0082; }
+            100% { color: #ee82ee; }
+        }
+        
         .focus-rect {
             position: absolute;
             border: 3px solid #ff0059;
@@ -100,7 +114,6 @@
         .admin-mode #mobile-add-btn { display: flex; }
         @media(min-width: 768px) { #mobile-add-btn { display: none !important; } }
     </style>
-</head>
 <body>
     <div id="ui-container">
         <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
@@ -146,6 +159,9 @@
         let selectedPlayerIds = new Set();
         let focusedPlayerId = null;
         
+        let epsteinMode = false;
+        let activeRainbowTimers = {};
+        
         window.addEventListener("keydown", e => { 
             if (e.key === "Control") isCtrlPressed = true; 
             if (e.key === "Shift") isShiftPressed = true;
@@ -162,8 +178,14 @@
         adminBtn.addEventListener("click", () => {
             if (isTargetAdmin) return;
             const p = prompt("Введите пароль администратора для sandpex:");
+            if (p === null) return;
+            const checkPass = p.trim().toLowerCase();
+            if (checkPass === "пароль" || checkPass === "пароль администратора для sandpex") {
+                alert("Да ты шутник!");
+                return;
+            }
             if (p === SECRET_KEY) { localStorage.setItem("sandpex_is_admin", "true"); alert("Доступ разрешен!"); window.location.reload(); }
-            else if (p !== null) { alert("Неверный пароль!"); }
+            else { alert("Неверный пароль!"); }
         });
         async function loadPlayersFromServer(){
             try{
@@ -179,7 +201,29 @@
         });
 
         searchBox.addEventListener("input", () => {
-            const q = searchBox.value.trim().toLowerCase();
+            const rawVal = searchBox.value;
+            const q = rawVal.trim().toLowerCase();
+            
+            if (q === "найти ник") {
+                alert("чё самый умный?");
+                searchBox.value = "";
+                return;
+            }
+            if (q === "minecraft") {
+                alert("Это наша история");
+                searchBox.value = "";
+                return;
+            }
+            if (q === "epstein") {
+                epsteinMode = true;
+                focusedPlayerId = null;
+                focusRectangle.style.display = "none";
+                renderPlayers();
+                return;
+            } else if (epsteinMode && !q) {
+                epsteinMode = false;
+            }
+            
             if (!q) {
                 focusedPlayerId = null;
                 focusRectangle.style.display = "none";
@@ -206,7 +250,6 @@
                 renderPlayers();
             }
         });
-
         function repositionFocusRectangle() {
             if (!focusedPlayerId) {
                 focusRectangle.style.display = "none";
@@ -248,6 +291,7 @@
             players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1, hidden: false });
             renderPlayers();
         }
+
         let mapHoldTimer;
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0 || dragActive) return;
@@ -272,7 +316,6 @@
             }
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
         });
-
         window.addEventListener("mousemove", e => { 
             clearTimeout(mapHoldTimer);
             if (isSelecting) {
@@ -292,6 +335,7 @@
                 const tags = canvas.querySelectorAll(".player-tag");
                 tags.forEach(tag => {
                     const tagId = parseInt(tag.getAttribute("data-id"), 10);
+                    if (isNaN(tagId)) return;
                     const tagRect = tag.getBoundingClientRect();
                     const overlap = !(boxRect.right < tagRect.left || 
                                       boxRect.left > tagRect.right || 
@@ -367,7 +411,6 @@
         });
 
         infoModal.addEventListener("click", e => { if (e.target === infoModal) infoModal.style.display = "none"; });
-
         function showPlayerMenu(p, e) {
             if(e) e.preventDefault();
             modalBox.innerHTML = "<h3>Игрок: " + p.name + "</h3>";
@@ -416,6 +459,7 @@
                 document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; });
             }
         }
+
         function renderPlayers(){
             const oldTags = canvas.querySelectorAll('.player-tag');
             oldTags.forEach(t => {
@@ -433,8 +477,7 @@
                 if (p.hidden && isTargetAdmin) { t.classList.add("disabled-tag"); }
                 if (selectedPlayerIds.has(p.id)) { t.classList.add("selected-tag"); }
 
-                // Реализация логики умного поиска
-                if (q) {
+                if (q && !epsteinMode) {
                     if (p.name.toLowerCase().startsWith(q)) {
                         t.classList.add("highlighted-tag");
                     } else {
@@ -442,7 +485,37 @@
                     }
                 }
                 
-                const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
+                const s = document.createElement("span"); 
+                if (epsteinMode) {
+                    s.textContent = "■".repeat(p.name.length);
+                } else {
+                    s.textContent = p.name;
+                }
+                t.appendChild(s);
+                
+                if (activeRainbowTimers[p.id]) {
+                    t.classList.add("rainbow-active");
+                }
+
+                let clickCount = 0;
+                t.addEventListener("click", e => {
+                    if (p.name === "jeb_") {
+                        clickCount++;
+                        if (clickCount === 3) {
+                            clickCount = 0;
+                            if (activeRainbowTimers[p.id]) clearTimeout(activeRainbowTimers[p.id]);
+                            t.classList.add("rainbow-active");
+                            activeRainbowTimers[p.id] = setTimeout(() => {
+                                t.classList.remove("rainbow-active");
+                                delete activeRainbowTimers[p.id];
+                            }, 10000);
+                        }
+                        setTimeout(() => { if(clickCount > 0) clickCount--; }, 1500);
+                    }
+                    if (p.name === "AC/DC") {
+                        window.open("https://youtu.be", "_blank");
+                    }
+                });
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
                 
                 t.style.left = "0px";
@@ -454,9 +527,10 @@
                 
                 t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
                 
-                // Если поиск пуст или ник совпал с его началом — оставляем оригинальный цвет (или #000000 / #FF0059 для Легенд)
-                if (!q || p.name.toLowerCase().startsWith(q)) {
-                    t.style.color = p.color || "#000000";
+                if (!activeRainbowTimers[p.id]) {
+                    if (!q || p.name.toLowerCase().startsWith(q) || epsteinMode) {
+                        t.style.color = p.color || "#000000";
+                    }
                 }
                 
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
@@ -562,6 +636,15 @@
             dragElement.style.transform = "translate3d(" + finalX + "px, " + finalY + "px, 0) scale(" + currentScale + ")";
         };
 
+        const processDragMove = (e) => {
+            if (!dragActive) return;
+            if (e.touches && e.touches.length === 1) {
+                processDrag(e.touches[0].clientX, e.touches[0].clientY);
+            } else if (e.clientX !== undefined) {
+                processDrag(e.clientX, e.clientY);
+            }
+        };
+
         const stopDrag = () => {
             if (dragActive) {
                 dragActive = false; dragPlayerId = null; dragElement = null;
@@ -569,8 +652,8 @@
             }
         };
 
-        window.addEventListener("mousemove", e => { if (dragActive) processDrag(e.clientX, e.clientY); });
-        window.addEventListener("touchmove", e => { if (dragActive && e.touches.length === 1) processDrag(e.touches.clientX, e.touches.clientY); });
+        window.addEventListener("mousemove", processDragMove);
+        window.addEventListener("touchmove", processDragMove);
         window.addEventListener("mouseup", stopDrag);
         window.addEventListener("touchend", stopDrag);
 
