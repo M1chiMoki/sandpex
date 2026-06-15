@@ -48,9 +48,9 @@
         
         .plasmatron-zone { position: absolute; top: 0; height: 100%; display: none; z-index: 3; pointer-events: none; }
         .plasmatron-warn { background: rgba(255, 0, 60, 0.15); border-left: 2px dashed #ff003c; border-right: 2px dashed #ff003c; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #ff003c; font-weight: 900; }
-        .plasmatron-warn.pulse-glow { animation: warnPulse 0.25s infinite alternate; }
-        @keyframes warnPulse { 0% { opacity: 0.15; } 100% { opacity: 0.65; } }
-        .plasmatron-beam { background: #ff003c; box-shadow: 0 0 25px #ff003c, 0 0 45px #ff003c; }
+        .plasmatron-warn.pulse-glow { animation: warnPulse 0.15s infinite alternate; }
+        @keyframes warnPulse { 0% { opacity: 0.15; } 100% { opacity: 0.55; } }
+        .plasmatron-beam { background: #ff003c; box-shadow: 0 0 15px #ff003c, 0 0 30px #ff003c; }
         #ready-banner { display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #ff003c; letter-spacing: 2px; animation: pulse 0.5s ease-in-out infinite alternate; z-index: 10; pointer-events: none; }
         @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -162,6 +162,9 @@
         ];
         
         let ballX = 440, ballY = 290, ballSpeedX = 4, ballSpeedY = 3;
+        let currentBallSpeedX = 0, currentBallSpeedY = 0;
+        let startLerpFactor = 0.03;
+        
         let playerX = 380, botX = 380;
         const paddleHeight = 35;
         let playerWidth = 120, botWidth = 120;
@@ -314,7 +317,7 @@
                 }
                 
                 if (playerScore === 255) {
-                    nextAttackSpawnTime = Date.now() + (7000 + Math.random() * 23000);
+                    nextAttackSpawnTime = Date.now() + (4000 + Math.random() * 6000);
                 }
             } else {
                 document.body.style.background = "#ffffff";
@@ -352,11 +355,11 @@
             attackButton = {
                 el: el,
                 x: 200 + Math.random() * 500,
-                y: 150 + Math.random() * 200,
+                y: 100,
                 w: el.offsetWidth || 70,
                 h: el.offsetHeight || 28,
-                speedX: (Math.random() > 0.5 ? 0.4 : -0.4),
-                speedY: (Math.random() > 0.5 ? 0.3 : -0.3),
+                speedX: (Math.random() * 0.6 - 0.3),
+                speedY: 1.2 + Math.random() * 0.8,
                 angle: 0,
                 rotSpeed: (Math.random() * 0.4 - 0.2)
             };
@@ -364,18 +367,21 @@
 
         function resetPositions() {
             ballX = 440; ballY = 290;
-            ballSpeedX = (Math.random() > 0.5 ? 4 : -4);
-            ballSpeedY = (Math.random() > 0.5 ? 3 : -3);
+            ballSpeedX = (Math.random() > 0.5 ? 3.5 : -3.5);
+            ballSpeedY = (Math.random() > 0.5 ? 2.6 : -2.6);
             if (playerScore >= 250) {
-                ballSpeedX *= 1.3;
-                ballSpeedY *= 1.3;
+                ballSpeedX *= 1.15;
+                ballSpeedY *= 1.15;
             }
+            currentBallSpeedX = ballSpeedX * 0.1;
+            currentBallSpeedY = ballSpeedY * 0.1;
+            
             playerX = 450 - (playerWidth / 2);
             botX = 450 - (botWidth / 2);
             playerEl.style.left = playerX + "px";
             botEl.style.left = botX + "px";
             playerPaddleHits = 0;
-            orbSpeedMultiplier = 1.0 + (playerScore - 250) * 0.05;
+            orbSpeedMultiplier = 1.0 + (playerScore - 250) * 0.04;
         }
 
         stage.addEventListener("mousemove", e => {
@@ -391,7 +397,7 @@
             
             attackHits++;
             removeAttackButton();
-            nextAttackSpawnTime = Date.now() + (7000 + Math.random() * 23000);
+            nextAttackSpawnTime = Date.now() + (5000 + Math.random() * 6000);
             
             if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 2px #ff003c) blur(0.3px)";
             else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) blur(0.6px)";
@@ -535,11 +541,15 @@
             if (!gameActive) return;
 
             if (!inPause) {
-                ballX += ballSpeedX;
-                ballY += ballSpeedY;
+                currentBallSpeedX += (ballSpeedX - currentBallSpeedX) * startLerpFactor;
+                currentBallSpeedY += (ballSpeedY - currentBallSpeedY) * startLerpFactor;
+
+                ballX += currentBallSpeedX;
+                ballY += currentBallSpeedY;
 
                 if (ballX <= 0 || ballX >= 880) {
                     ballSpeedX = -ballSpeedX;
+                    currentBallSpeedX = -currentBallSpeedX;
                     if (ballX < 0) ballX = 0;
                     if (ballX > 880) ballX = 880;
                 }
@@ -566,37 +576,49 @@
                             plasmaGlobalTimer = 0;
                             
                             if (playerScore >= 250 && playerScore <= 253) {
-                                plasmaNextSpawnTime = 3000 + Math.random() * 3000;
-                                activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: Math.random() * 675, w: 225, el: plasmaZones[0] });
+                                plasmaNextSpawnTime = 5000 + Math.random() * 4000;
+                                if (activePlasmas.length === 0) {
+                                    activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: Math.random() * 750, w: 150, nodeIndex: 0 });
+                                }
                             } else if (playerScore === 254) {
-                                plasmaNextSpawnTime = 1000 + Math.random() * 4000;
-                                activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: Math.random() * 675, w: 225, el: plasmaZones[0] });
-                                activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: Math.random() * 675, w: 225, el: plasmaZones[1] });
+                                plasmaNextSpawnTime = 4000 + Math.random() * 3000;
+                                if (activePlasmas.length === 0) {
+                                    let x1 = Math.random() * 350;
+                                    let x2 = 450 + Math.random() * 300;
+                                    activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: x1, w: 150, nodeIndex: 0 });
+                                    activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: x2, w: 150, nodeIndex: 1 });
+                                }
                             } else if (playerScore === 255) {
-                                plasmaNextSpawnTime = 2000 + Math.random() * 2000;
-                                let isLeft = Math.random() > 0.5;
-                                activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: isLeft ? 0 : 450, w: 450, el: plasmaZones[0] });
+                                plasmaNextSpawnTime = 3500 + Math.random() * 2500;
+                                if (activePlasmas.length === 0) {
+                                    let isLeft = Math.random() > 0.5;
+                                    activePlasmas.push({ state: 1, timer: 0, warnCount: 0, x: isLeft ? 0 : 450, w: 450, nodeIndex: 0 });
+                                }
                             }
                             
                             activePlasmas.forEach(p => {
-                                p.el.style.left = p.x + "px";
-                                p.el.style.width = p.w + "px";
-                                p.el.className = "plasmatron-zone plasmatron-warn pulse-glow";
-                                p.el.textContent = "⚠️";
-                                p.el.style.display = "block";
+                                let el = plasmaZones[p.nodeIndex];
+                                el.style.left = p.x + "px";
+                                el.style.width = p.w + "px";
+                                el.className = "plasmatron-zone plasmatron-warn pulse-glow";
+                                el.textContent = "⚠️";
+                                el.style.display = "block";
                             });
                         }
 
                         for (let i = activePlasmas.length - 1; i >= 0; i--) {
                             let p = activePlasmas[i];
+                            let el = plasmaZones[p.nodeIndex];
                             p.timer += 16.66;
+                            
                             if (p.state === 1) {
-                                if (p.timer >= 500) {
-                                    p.timer = 0; p.warnCount++;
+                                if (p.timer >= 600) {
+                                    p.timer = 0;
+                                    p.warnCount++;
                                     if (p.warnCount >= 3) {
                                         p.state = 2;
-                                        p.el.className = "plasmatron-zone plasmatron-beam";
-                                        p.el.textContent = "";
+                                        el.className = "plasmatron-zone plasmatron-beam";
+                                        el.textContent = "";
                                     }
                                 }
                             } else if (p.state === 2) {
@@ -610,8 +632,8 @@
                                         return;
                                     }
                                 }
-                                if (p.timer >= 600) {
-                                    p.el.style.display = "none";
+                                if (p.timer >= 800) {
+                                    el.style.display = "none";
                                     activePlasmas.splice(i, 1);
                                 }
                             }
@@ -627,19 +649,22 @@
                             attackButton.angle += attackButton.rotSpeed;
                             
                             if (attackButton.x <= 100 || attackButton.x >= 800 - attackButton.w) attackButton.speedX = -attackButton.speedX;
-                            if (attackButton.y <= 120 || attackButton.y >= 450) attackButton.speedY = -attackButton.speedY;
-                            
-                            attackButton.el.style.left = attackButton.x + "px";
-                            attackButton.el.style.top = attackButton.y + "px";
-                            attackButton.el.style.transform = `rotate(${attackButton.angle}deg)`;
-                            
-                            if (attackButton.y + attackButton.h >= 535 && attackButton.y <= 570 && 
-                                attackButton.x + attackButton.w >= playerX && attackButton.x <= playerX + playerWidth) {
-                                isPadOverAttack = true;
-                                attackButton.el.style.background = "#27ae60";
+                            if (attackButton.y > 620) {
+                                removeAttackButton();
+                                nextAttackSpawnTime = Date.now() + (4000 + Math.random() * 4000);
                             } else {
-                                isPadOverAttack = false;
-                                attackButton.el.style.background = "#2ecc71";
+                                attackButton.el.style.left = attackButton.x + "px";
+                                attackButton.el.style.top = attackButton.y + "px";
+                                attackButton.el.style.transform = `rotate(${attackButton.angle}deg)`;
+                                
+                                if (attackButton.y + attackButton.h >= 535 && attackButton.y <= 570 && 
+                                    attackButton.x + attackButton.w >= playerX && attackButton.x <= playerX + playerWidth) {
+                                    isPadOverAttack = true;
+                                    attackButton.el.style.background = "#27ae60";
+                                } else {
+                                    isPadOverAttack = false;
+                                    attackButton.el.style.background = "#2ecc71";
+                                }
                             }
                         }
                     }
@@ -652,7 +677,9 @@
                     o.el.style.left = o.x + "px"; o.el.style.top = o.y + "px";
                     o.el.style.transform = `rotate(${o.angle}deg)`;
                     if (ballX + 20 >= o.x && ballX <= o.x + o.width && ballY + 20 >= o.y && ballY <= o.y + o.height) {
-                        ballSpeedY = -ballSpeedY; ballSpeedX += (Math.random() * 2 - 1) * 2; 
+                        ballSpeedY = -ballSpeedY;
+                        currentBallSpeedY = -currentBallSpeedY;
+                        ballSpeedX += (Math.random() * 2 - 1) * 1.5; 
                     }
                 });
 
@@ -685,22 +712,32 @@
 
                 if (ballSpeedY < 0 && ballY <= 65 && ballY >= 30) {
                     if (ballX + 20 >= botX && ballX <= botX + botWidth) {
-                        ballSpeedY = -ballSpeedY * 1.03;
+                        ballSpeedY = -ballSpeedY * 1.02;
+                        currentBallSpeedY = -currentBallSpeedY * 1.02;
                         let hitPoint = (ballX + 10 - (botX + botWidth / 2)) / (botWidth / 2);
-                        ballSpeedX += hitPoint * 3; ballY = 66; 
+                        ballSpeedX += hitPoint * 2.5; ballY = 66; 
                     }
                 }
 
                 if (ballSpeedY > 0 && ballY + 20 >= 535 && ballY <= 570) {
                     if (ballX + 20 >= playerX && ballX <= playerX + playerWidth) {
-                        ballSpeedY = -ballSpeedY * 1.03;
+                        ballSpeedY = -ballSpeedY * 1.02;
+                        currentBallSpeedY = -currentBallSpeedY * 1.02;
                         let hitPoint = (ballX + 10 - (playerX + playerWidth / 2)) / (playerWidth / 2);
-                        ballSpeedX += hitPoint * 3; ballY = 514; 
+                        ballSpeedX += hitPoint * 2.5; ballY = 514; 
                         playerPaddleHits++;
                     }
                 }
 
-                if (ballY < 0) handleGoal(true); 
+                if (ballY < 0) {
+                    if (playerScore === 255) {
+                        ballY = 0;
+                        ballSpeedY = -ballSpeedY;
+                        currentBallSpeedY = -currentBallSpeedY;
+                    } else {
+                        handleGoal(true);
+                    }
+                } 
                 else if (ballY > 600) handleGoal(false); 
             }
 
@@ -741,10 +778,10 @@
 
         function getBotSpeed() {
             if (playerScore === 255) return 40.0;
-            if (playerScore >= 250) return 12.0 + (playerScore - 250) * 0.15;
-            if (playerScore >= 200) return 6.0;
-            if (playerScore >= 100) return 5.2;
-            if (playerScore >= 50)  return 4.5;
+            if (playerScore >= 250) return 9.5 + (playerScore - 250) * 0.12;
+            if (playerScore >= 200) return 5.5;
+            if (playerScore >= 100) return 5.0;
+            if (playerScore >= 50)  return 4.4;
             if (playerScore >= 25)  return 3.8;
             return 3.2;
         }
@@ -758,8 +795,8 @@
             obstacles.push({
                 el: el, x: Math.random() * 700 + 50, y: Math.random() * 200 + 150,
                 width: el.offsetWidth || 80, height: el.offsetHeight || 30,
-                speedX: (Math.random() * 2 - 1) * 0.6, speedY: (Math.random() * 2 - 1) * 0.6,
-                angle: 0, rotSpeed: Math.random() * 0.4 - 0.2
+                speedX: (Math.random() * 2 - 1) * 0.5, speedY: (Math.random() * 2 - 1) * 0.5,
+                angle: 0, rotSpeed: Math.random() * 0.3 - 0.15
             });
         }
 
@@ -769,7 +806,7 @@
             el.className = "red-orb";
             el.textContent = "X";
             stage.appendChild(el);
-            redOrbs.push({ el: el, x: Math.random() * 860 + 20, y: 0, speedY: (1.5 + Math.random() * 2) * orbSpeedMultiplier });
+            redOrbs.push({ el: el, x: Math.random() * 860 + 20, y: 0, speedY: (1.4 + Math.random() * 1.6) * orbSpeedMultiplier });
         }
 
         document.getElementById("retry-btn").addEventListener("click", triggerFullReset);
