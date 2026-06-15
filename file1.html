@@ -64,6 +64,9 @@
         .btn { background: #000; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 6px; margin: 5px; transition: 0.2s; }
         .btn:hover { background: #333; }
         
+        #countdown-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
+        #countdown-number { font-size: 90px; font-weight: 900; color: #000000; transform: scale(1); transition: transform 0.2s ease-out; }
+        
         #transition-curtain { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 999999; grid-template-columns: repeat(20, 1fr); grid-template-rows: repeat(20, 1fr); }
         .black-block { background: #000; opacity: 0; transition: opacity 0.05s ease; }
     </style>
@@ -81,6 +84,10 @@
         <div id="player" class="paddle player-paddle"></div>
         <div id="bot" class="paddle bot-paddle"></div>
         <div id="ball">O</div>
+        
+        <div id="countdown-overlay">
+            <div id="countdown-number">3</div>
+        </div>
     </div>
 
     <div id="console-overlay">
@@ -123,6 +130,8 @@
         const cheatInput = document.getElementById("cheat-input");
         const submitArrowBtn = document.getElementById("submit-arrow-btn");
         const gameTitle = document.getElementById("game-title");
+        const countdownOverlay = document.getElementById("countdown-overlay");
+        const countdownNumber = document.getElementById("countdown-number");
         
         let ballX = 440, ballY = 290, ballSpeedX = 4, ballSpeedY = 3;
         let playerX = 380, botX = 380;
@@ -135,39 +144,23 @@
         let obstacles = [];
         let redOrbs = [];
 
-        function sha256Sync(str) {
-            var buffer = new TextEncoder().encode(str);
-            var words = [];
-            for (var i = 0; i < buffer.length; i++) {
-                words[i >> 2] |= buffer[i] << (24 - (i % 4) * 8);
-            }
-            var asciiLength = buffer.length;
-            var hash = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
-            var k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
-            words[asciiLength >> 2] |= 0x80 << (24 - (asciiLength % 4) * 8);
-            while (((words.length * 4) % 64) !== 56) { words.push(0); }
-            words.push(0); words.push(asciiLength * 8);
-            for (var j = 0; j < words.length; j += 16) {
-                var w = words.slice(j, j + 16); var oldHash = hash.slice(0);
-                for (var i = 0; i < 64; i++) {
-                    if (i >= 16) {
-                        var w15 = w[i - 15], w2 = w[i - 2];
-                        var s0 = ((w15>>>7)|(w15<<25)) ^ ((w15>>>18)|(w15<<14)) ^ (w15>>>3);
-                        var s1 = ((w2>>>17)|(w2<<15)) ^ ((w2>>>19)|(w2<<13)) ^ (w2>>>10);
-                        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
-                    }
-                    var a = hash, b = hash, c = hash, d = hash, e = hash, f = hash, g = hash, h = hash;
-                    var S1 = ((e>>>6)|(e<<26)) ^ ((e>>>11)|(e<<21)) ^ ((e>>>25)|(e<<7));
-                    var ch = (e & f) ^ ((~e) & g);
-                    var temp1 = (h + S1 + ch + k[i] + w[i]) | 0;
-                    var S0 = ((a>>>2)|(a<<30)) ^ ((a>>>13)|(a<<19)) ^ ((a>>>22)|(a<<10));
-                    var maj = (a & b) ^ (a & c) ^ (b & c);
-                    var temp2 = (S0 + maj) | 0;
-                    hash = [(temp1 + temp2) | 0, a, b, c, (d + temp1) | 0, e, f, g];
+        function runCountdown(callback) {
+            inPause = true;
+            countdownOverlay.style.display = "flex";
+            let count = 3;
+            countdownNumber.textContent = count;
+            
+            let timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownNumber.textContent = count;
+                } else {
+                    clearInterval(timer);
+                    countdownOverlay.style.display = "none";
+                    inPause = false;
+                    if (callback) callback();
                 }
-                for (var i = 0; i < 8; i++) { hash[i] = (hash[i] + oldHash[i]) | 0; }
-            }
-            return hash.map(function(val) { var s = (val >>> 0).toString(16); while (s.length < 8) s = '0' + s; return s; }).join('');
+            }, 1000);
         }
 
         settingsBtn.addEventListener("click", () => {
@@ -185,20 +178,23 @@
 
         function executeCheatCheck() {
             const code = cheatInput.value.trim().toLowerCase();
-            const hashed = sha256Sync(code);
+            
             const cheatMap = {
-                "3be059f032252a17088924b179294248aa6180a52df0fae627c2fe6681b95b87": () => { playerScore = 25; },
-                "ea66f77ccb02e70e9a7e6ff8161b94ea9c07e05fc8645e7fdb0ea628f26db9cc": () => { playerScore = 50; },
-                "d5d5945ec598f4e24ee7662c1be833efdcd38fe4b8b6f3a7633cc47da0cc3283": () => { playerScore = 100; },
-                "cb25bfd33f7c32bf28d098e945fe96b1853da99bc6e7f223f6685fb1ee3ff5fb": () => { playerScore = 200; },
-                "0f45512ae30c5e7b399ccbc4ca355df040a43057187c53e83918a5df9775be37": () => { playerScore = 249; }, 
-                "d4eb20fc5ba98db5f40f09ee395dc3d97ba23c914da7dbca03b9b478335f606a": () => { playerScore = 250; },
-                "d72d633e08fbe7d507b949fefee4a6136fa513da19bc0195ee88301cf1294875": () => { playerScore = 255; }, 
-                "fcd48911bfdf013bfd3f18e95df1881cf71cf70ff22b8ff34f2d34199c0f994a": () => { godModeActive = true; },  
-                "a19ca4d9247eb97bd0b3294326532d56d9539d4825dd8b8352614b62095f9227": () => { godModeActive = false; } 
+                "mjv4dGVzdA==": () => { playerScore = 25; },   // 25xtest
+                "NTB4dGVzdA==": () => { playerScore = 50; },   // 50xtest
+                "MTAweHRlc3Q=": () => { playerScore = 100; }, // 100xtest
+                "MjAweHRlc3Q=": () => { playerScore = 200; }, // 200xtest
+                "MjQ5eHRlc3Q=": () => { playerScore = 249; }, // 249xtest
+                "MjUweHRlc3Q=": () => { playerScore = 250; }, // 250xtest
+                "MjU2eHRlc3Q=": () => { playerScore = 255; }, // 256xtest
+                "Z29kdGVzdA==": () => { godModeActive = true; },   // godtest
+                "bW9ydGFsdGVzdA==": () => { godModeActive = false; } // mortaltest
             };
-            if (cheatMap[hashed] !== undefined) {
-                cheatMap[hashed]();
+
+            const encoded = btoa(code);
+
+            if (cheatMap[encoded] !== undefined) {
+                cheatMap[encoded]();
                 scorePlayerEl.textContent = playerScore;
                 if (playerScore >= 250) {
                     stage.classList.add("boss-mode");
@@ -246,7 +242,9 @@
                 resetPositions();
                 gameActive = true;
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                animationFrameId = requestAnimationFrame(gameLoop);
+                runCountdown(() => {
+                    animationFrameId = requestAnimationFrame(gameLoop);
+                });
             }, 50);
         }
 
@@ -363,9 +361,10 @@
                 botWidth = botEl.offsetWidth || 120;
                 resetPositions();
                 ballEl.style.display = "flex";
-                inPause = false;
                 gameActive = true;
-                animationFrameId = requestAnimationFrame(gameLoop);
+                runCountdown(() => {
+                    animationFrameId = requestAnimationFrame(gameLoop);
+                });
             }, 50);
         }
 
