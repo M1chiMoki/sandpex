@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>sandpex — Легендарный Вертикальный Пинг-Понг</title>
+    <title id="game-title">sandpex — Легендарный Пинг-Понг</title>
     <style>
         @font-face {
             font-family: 'Minecraftia';
@@ -89,6 +89,7 @@
                 <input type="text" id="cheat-input" placeholder="" autocomplete="off">
                 <button id="submit-arrow-btn">➔</button>
             </div>
+            <button class="btn" id="console-restart-btn" style='font-size:12px; padding:8px 16px; background: #e74c3c;'>Рестарт</button>
             <button class="btn" id="console-close-btn" style='font-size:12px; padding:8px 16px; margin-top: 5px;'>Вернуться</button>
         </div>
     </div>
@@ -118,8 +119,10 @@
         const settingsBtn = document.getElementById("settings-btn");
         const consoleOverlay = document.getElementById("console-overlay");
         const consoleCloseBtn = document.getElementById("console-close-btn");
+        const consoleRestartBtn = document.getElementById("console-restart-btn");
         const cheatInput = document.getElementById("cheat-input");
         const submitArrowBtn = document.getElementById("submit-arrow-btn");
+        const gameTitle = document.getElementById("game-title");
         
         let ballX = 440, ballY = 290, ballSpeedX = 4, ballSpeedY = 3;
         let playerX = 380, botX = 380;
@@ -153,7 +156,7 @@
                         var s1 = ((w2>>>17)|(w2<<15)) ^ ((w2>>>19)|(w2<<13)) ^ (w2>>>10);
                         w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
                     }
-                    var a = hash[0], b = hash[1], c = hash[2], d = hash[3], e = hash[4], f = hash[5], g = hash[6], h = hash[7];
+                    var a = hash, b = hash, c = hash, d = hash, e = hash, f = hash, g = hash, h = hash;
                     var S1 = ((e>>>6)|(e<<26)) ^ ((e>>>11)|(e<<21)) ^ ((e>>>25)|(e<<7));
                     var ch = (e & f) ^ ((~e) & g);
                     var temp1 = (h + S1 + ch + k[i] + w[i]) | 0;
@@ -197,8 +200,16 @@
             if (cheatMap[hashed] !== undefined) {
                 cheatMap[hashed]();
                 scorePlayerEl.textContent = playerScore;
-                if (playerScore >= 250) stage.classList.add("boss-mode");
-                else stage.classList.remove("boss-mode");
+                if (playerScore >= 250) {
+                    stage.classList.add("boss-mode");
+                    gameTitle.textContent = "Преисподня";
+                } else {
+                    stage.classList.remove("boss-mode");
+                    gameTitle.textContent = "sandpex — Легендарный Пинг-Понг";
+                }
+                clearHardcoreElements();
+                resetPositions();
+                ballEl.style.display = "flex";
             }
             consoleOverlay.style.display = "none";
             cheatInput.value = "";
@@ -207,6 +218,12 @@
 
         submitArrowBtn.addEventListener("click", executeCheatCheck);
         cheatInput.addEventListener("keydown", e => { if (e.key === "Enter") executeCheatCheck(); });
+
+        consoleRestartBtn.addEventListener("click", () => {
+            consoleOverlay.style.display = "none";
+            cheatInput.value = "";
+            triggerFullReset();
+        });
         async function initGame() {
             try {
                 const r = await fetch("players.json?t=" + Date.now(), { cache: "no-store" });
@@ -326,6 +343,32 @@
                 }, index * 3);
             });
         }
+        function triggerFullReset() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            playerScore = 0;
+            botScore = 0;
+            godModeActive = false;
+            scorePlayerEl.textContent = "0";
+            scoreBotEl.textContent = "0";
+            overlay.style.display = "none";
+            stage.classList.remove("boss-mode");
+            gameTitle.textContent = "sandpex — Легендарный Пинг-Понг";
+            clearHardcoreElements();
+            
+            playerEl.textContent = getRandomLegend();
+            botEl.textContent = getRandomLegend();
+            
+            setTimeout(() => {
+                playerWidth = playerEl.offsetWidth || 120;
+                botWidth = botEl.offsetWidth || 120;
+                resetPositions();
+                ballEl.style.display = "flex";
+                inPause = false;
+                gameActive = true;
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }, 50);
+        }
+
         function handleGoal(isPlayerGoal) {
             inPause = true;
             if (isPlayerGoal) {
@@ -357,6 +400,7 @@
                 delay = 3000;
                 readyBanner.style.display = "block";
                 stage.classList.add("boss-mode");
+                gameTitle.textContent = "Преисподня";
             }
 
             setTimeout(() => {
@@ -477,29 +521,7 @@
             animationFrameId = requestAnimationFrame(gameLoop);
         }
 
-        document.getElementById("retry-btn").addEventListener("click", () => {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            playerScore = 0; 
-            botScore = 0;
-            scorePlayerEl.textContent = "0";
-            scoreBotEl.textContent = "0";
-            overlay.style.display = "none";
-            stage.classList.remove("boss-mode");
-            clearHardcoreElements();
-            
-            playerEl.textContent = getRandomLegend();
-            botEl.textContent = getRandomLegend();
-            
-            setTimeout(() => {
-                playerWidth = playerEl.offsetWidth || 120;
-                botWidth = botEl.offsetWidth || 120;
-                resetPositions();
-                ballEl.style.display = "flex";
-                inPause = false; 
-                gameActive = true;
-                animationFrameId = requestAnimationFrame(gameLoop);
-            }, 50);
-        });
+        document.getElementById("retry-btn").addEventListener("click", triggerFullReset);
 
         document.getElementById("back-btn").addEventListener("click", () => {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
