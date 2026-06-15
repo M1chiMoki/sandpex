@@ -11945,5 +11945,29 @@
     "pinned": false,
     "scale": 1.2,
     "layer": 2
+  },
+  {
+    "id": 1781513138638,
+    "name": "AC/DC",
+    "x": 4906.328057269299,
+    "y": 1606.3824236477205,
+    "color": "#000000",
+    "description": "",
+    "pinned": false,
+    "scale": 1,
+    "layer": 1,
+    "hidden": false
+  },
+  {
+    "id": 1781513144238,
+    "name": "jeb_",
+    "x": 5026.98631091959,
+    "y": 1617.2703313586435,
+    "color": "#000000",
+    "description": "",
+    "pinned": false,
+    "scale": 1,
+    "layer": 1,
+    "hidden": false
   }
 ]
