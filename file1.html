@@ -32,15 +32,27 @@
         }
         .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; z-index: 10; pointer-events: none; }
         .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); bottom: 30px; }
-        .bot-paddle { color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease; }
+        .bot-paddle { position: absolute; color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease, text-shadow 0.2s ease, opacity 0.2s ease; }
         
+        .bot-vibrate { animation: paddleShake 0.12s linear infinite; }
+        
+        @keyframes paddleShake {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-3px, 2px); }
+            50% { transform: translate(3px, -2px); }
+            75% { transform: translate(-2px, -1px); }
+            100% { transform: translate(2px, 2px); }
+        }
+
+        .bot-particle-shard { position: absolute; font-size: 12px; font-weight: 900; color: #ff003c; pointer-events: none; z-index: 12; will-change: transform, opacity; }
+        .final-projectile { position: absolute; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 15px #ffffff, 0 0 30px #ffffff; z-index: 11; pointer-events: none; will-change: transform; }
+
         #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 9; pointer-events: none; }
         
         .glitch-tag { position: absolute; font-weight: bold; font-size: 14px; color: #000000; border: 2px solid #000000; background: rgba(0, 0, 0, 0.08); padding: 4px 8px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 5; }
         .red-orb { position: absolute; font-size: 22px; font-weight: 900; color: #ff003c; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none; z-index: 6; }
         
         .ash-particle { position: absolute; width: 5px; height: 5px; background: rgba(40, 40, 40, 0.35); pointer-events: none; z-index: 2; will-change: transform; }
-        
         .side-ribbon { position: absolute; top: 0; width: 85px; height: 100%; overflow: hidden; display: none; z-index: 1; opacity: 0.15; font-size: 10px; font-weight: bold; color: #000; pointer-events: none; }
         #left-ribbon { left: 5px; }
         #right-ribbon { right: 5px; }
@@ -51,6 +63,7 @@
         .plasmatron-warn.pulse-glow { animation: warnPulse 0.15s infinite alternate; }
         @keyframes warnPulse { 0% { opacity: 0.15; } 100% { opacity: 0.55; } }
         .plasmatron-beam { background: #ff003c; box-shadow: 0 0 15px #ff003c, 0 0 30px #ff003c; }
+
         #ready-banner { display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #ff003c; letter-spacing: 2px; animation: pulse 0.5s ease-in-out infinite alternate; z-index: 10; pointer-events: none; }
         @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -60,7 +73,6 @@
         #score-bot { color: #ff003c; }
         .epic-pulse { animation: epicPulseAnim 0.3s infinite alternate !important; opacity: 1 !important; font-size: 70px !important; }
         @keyframes epicPulseAnim { 0% { transform: translate(-50%, -50%) scale(0.85); color: #ff0059; } 100% { transform: translate(-50%, -50%) scale(1.25); color: #000000; } }
-        
         .attack-button-obj { position: absolute; background: #2ecc71; border: 3px solid #27ae60; color: #ffffff; font-size: 11px; font-weight: bold; padding: 6px 10px; border-radius: 4px; box-shadow: 0 0 10px #2ecc71; cursor: pointer; z-index: 8; white-space: nowrap; pointer-events: auto !important; }
 
         #settings-btn { position: absolute; top: 15px; right: 15px; width: 36px; height: 36px; background: #000000; color: #ffffff; border: 2px solid #000000; border-radius: 6px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding-bottom: 2px; z-index: 9999999 !important; pointer-events: auto !important; }
@@ -176,6 +188,7 @@
         let obstacles = [];
         let redOrbs = [];
         let ashParticles = [];
+        let shatterParticles = [];
         
         let leftRibbonY = 0, rightRibbonY = 0;
         let orbSpeedMultiplier = 1.0;
@@ -189,6 +202,7 @@
         let attackHits = 0;
         let nextAttackSpawnTime = 0;
         let isPadOverAttack = false;
+        let isFinalSequence = false;
         function runCountdown(callback) {
             inPause = true;
             countdownOverlay.style.display = "flex";
@@ -317,7 +331,7 @@
                 }
                 
                 if (playerScore === 255) {
-                    nextAttackSpawnTime = Date.now() + (4000 + Math.random() * 6000);
+                    nextAttackSpawnTime = Date.now() + (4000 + Math.random() * 4000);
                 }
             } else {
                 document.body.style.background = "#ffffff";
@@ -330,6 +344,7 @@
                 plasmaZones.forEach(z => { z.style.display = "none"; });
                 activePlasmas = [];
                 botEl.style.filter = "none";
+                botEl.className = "paddle bot-paddle";
             }
         }
         function removeAsh() {
@@ -346,7 +361,7 @@
         }
 
         function spawnAttackButton() {
-            if (attackButton) return;
+            if (attackButton || isFinalSequence) return;
             let el = document.createElement("div");
             el.className = "attack-button-obj";
             el.textContent = "АТАКА";
@@ -385,7 +400,7 @@
         }
 
         stage.addEventListener("mousemove", e => {
-            if (!gameActive || inPause) return;
+            if (!gameActive || inPause || isFinalSequence) return;
             const rect = stage.getBoundingClientRect();
             let relativeX = e.clientX - rect.left - (playerWidth / 2);
             playerX = Math.max(0, Math.min(900 - playerWidth, relativeX));
@@ -393,20 +408,110 @@
         });
 
         window.addEventListener("click", e => {
-            if (!gameActive || inPause || playerScore !== 255 || !attackButton || !isPadOverAttack) return;
+            if (!gameActive || inPause || playerScore !== 255 || !attackButton || !isPadOverAttack || isFinalSequence) return;
             
             attackHits++;
             removeAttackButton();
-            nextAttackSpawnTime = Date.now() + (5000 + Math.random() * 6000);
             
-            if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 2px #ff003c) blur(0.3px)";
-            else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) blur(0.6px)";
-            else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(1px)";
-            else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 10px #ff003c) contrast(2) invert(0.2) blur(1.5px)";
-            else if (attackHits >= 5) {
-                triggerVictorySequence();
+            if (attackHits <= 4) {
+                botEl.classList.add("bot-vibrate");
+                if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) contrast(1.2)";
+                else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(0.3px)";
+                else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 9px #ff003c) contrast(1.8) blur(0.6px)";
+                else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 14px #ff003c) contrast(2.2) invert(0.1) blur(1px)";
+                
+                setTimeout(() => {
+                    botEl.classList.remove("bot-vibrate");
+                }, 500);
+                
+                nextAttackSpawnTime = Date.now() + (4000 + Math.random() * 4000);
+            } else if (attackHits >= 5) {
+                triggerFinalShatterSequence();
             }
         });
+
+        function triggerFinalShatterSequence() {
+            isFinalSequence = true;
+            clearHardcoreElements();
+            removeAsh();
+            
+            botEl.classList.add("bot-vibrate");
+            botEl.style.filter = "drop-shadow(0 0 20px #ff003c) contrast(3) invert(0.3)";
+            
+            let proj = document.createElement("div");
+            proj.className = "final-projectile";
+            proj.style.left = "442px";
+            proj.style.top = "-20px";
+            stage.appendChild(proj);
+            
+            let curY = -20;
+            let targetY = 35;
+            
+            function animateProjectile() {
+                curY += 8;
+                proj.style.transform = `translate3d(0, ${curY}px, 0)`;
+                if (curY < targetY) {
+                    requestAnimationFrame(animateProjectile);
+                } else {
+                    proj.remove();
+                    botEl.classList.remove("bot-vibrate");
+                    executeShatterExplosion();
+                }
+            }
+            requestAnimationFrame(animateProjectile);
+        }
+
+        function executeShatterExplosion() {
+            const rect = botEl.getBoundingClientRect();
+            const stageRect = stage.getBoundingClientRect();
+            const botLeftRelative = rect.left - stageRect.left;
+            const botTopRelative = rect.top - stageRect.top;
+            
+            botEl.style.opacity = "0";
+            ballEl.style.display = "none";
+            
+            for (let i = 0; i < 45; i++) {
+                let shard = document.createElement("div");
+                shard.className = "bot-particle-shard";
+                shard.textContent = Math.random() > 0.5 ? "★" : "✦";
+                shard.style.left = (botLeftRelative + Math.random() * botWidth) + "px";
+                shard.style.top = (botTopRelative + Math.random() * 25) + "px";
+                stage.appendChild(shard);
+                
+                shatterParticles.push({
+                    el: shard,
+                    x: parseFloat(shard.style.left),
+                    y: parseFloat(shard.style.top),
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.3) * 5,
+                    alpha: 1.0,
+                    fade: 0.015 + Math.random() * 0.02
+                });
+            }
+            
+            function runShatterLoop() {
+                if (shatterParticles.length === 0) {
+                    triggerVictorySequence();
+                    return;
+                }
+                for (let i = shatterParticles.length - 1; i >= 0; i--) {
+                    let p = shatterParticles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.1;
+                    p.alpha -= p.fade;
+                    if (p.alpha <= 0) {
+                        p.el.remove();
+                        shatterParticles.splice(i, 1);
+                    } else {
+                        p.el.style.transform = `translate3d(${p.x - parseFloat(p.el.style.left)}px, ${p.y - parseFloat(p.el.style.top)}px, 0)`;
+                        p.el.style.opacity = p.alpha;
+                    }
+                }
+                requestAnimationFrame(runShatterLoop);
+            }
+            requestAnimationFrame(runShatterLoop);
+        }
 
         function clearHardcoreElements() {
             obstacles.forEach(o => o.el.remove());
@@ -416,7 +521,6 @@
             activePlasmas = [];
             removeAttackButton();
         }
-
         function triggerVictorySequence() {
             gameActive = false;
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -438,52 +542,6 @@
             }, 2000);
         }
 
-        function triggerSpiralCurtain() {
-            curtain.style.display = "block";
-            curtain.innerHTML = "";
-            
-            const cols = 20;
-            const rows = 12;
-            const blockW = 900 / cols;
-            const blockH = 600 / rows;
-            
-            let order = [];
-            let top = 0, bottom = rows - 1, left = 0, right = cols - 1;
-            
-            while (top <= bottom && left <= right) {
-                for (let i = left; i <= right; i++) order.push({r: top, c: i});
-                top++;
-                for (let i = top; i <= bottom; i++) order.push({r: i, c: right});
-                right--;
-                if (top <= bottom) {
-                    for (let i = right; i >= left; i--) order.push({r: bottom, c: i});
-                    bottom--;
-                }
-                if (left <= right) {
-                    for (let i = bottom; i >= top; i--) order.push({r: i, c: left});
-                    left++;
-                }
-            }
-            
-            order.forEach((pos, index) => {
-                let div = document.createElement("div");
-                div.className = "spiral-block";
-                div.style.width = blockW + "px";
-                div.style.height = blockH + "px";
-                div.style.left = (pos.c * blockW) + "px";
-                div.style.top = (pos.r * blockH) + "px";
-                curtain.appendChild(div);
-                
-                setTimeout(() => {
-                    div.style.transform = "scale(1.05)";
-                    if (index === order.length - 1) {
-                        setTimeout(() => {
-                            window.location.href = "file2.html";
-                        }, 600);
-                    }
-                }, index * 15);
-            });
-        }
         function handleGoal(isPlayerGoal) {
             inPause = true;
             if (isPlayerGoal) {
@@ -540,7 +598,7 @@
         function gameLoop() {
             if (!gameActive) return;
 
-            if (!inPause) {
+            if (!inPause && !isFinalSequence) {
                 currentBallSpeedX += (ballSpeedX - currentBallSpeedX) * startLerpFactor;
                 currentBallSpeedY += (ballSpeedY - currentBallSpeedY) * startLerpFactor;
 
@@ -751,18 +809,31 @@
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             playerScore = 0;
             botScore = 0;
+            attackHits = 0;
             godModeActive = false;
             isBotFrozen = false;
+            isFinalSequence = false;
             scorePlayerEl.textContent = "0";
             scoreBotEl.textContent = "0";
+            scorePlayerEl.className = "";
+            scoreBotEl.className = "";
+            readyBanner.textContent = "Are you ready?";
             overlay.style.display = "none";
             stage.classList.remove("boss-mode");
             gameTitle.textContent = "sandpex — Легендарный Пинг-Понг";
             document.body.style.background = "#ffffff";
+            botEl.style.opacity = "1";
+            ballEl.style.display = "flex";
+            
+            shatterParticles.forEach(p => p.el.remove());
+            shatterParticles = [];
+            
             clearHardcoreElements();
             
             playerEl.textContent = getRandomLegend();
             botEl.textContent = getRandomLegend();
+            botEl.style.filter = "none";
+            botEl.className = "paddle bot-paddle";
             
             setTimeout(() => {
                 playerWidth = playerEl.offsetWidth || 120;
