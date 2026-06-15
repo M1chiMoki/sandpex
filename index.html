@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>sandpex — Карта ников</title>
     <style>
-        /* 1) Надежно встраиваем валидный пиксельный шрифт Minecraftia прямо в код */
         @font-face {
             font-family: 'Minecraftia';
             src: url('https://cdnfonts.com') format('woff');
             font-weight: normal; font-style: normal;
         }
 
-        /* Намертво задаем шрифт для ВСЕХ элементов, не ломая их размеры и позиции */
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
@@ -35,14 +33,51 @@
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; }
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
         .player-tag { 
             position: absolute; font-weight: bold; white-space: nowrap; user-select: none; color: #000000; background: none !important; border: none !important; box-shadow: none !important; 
             padding: 0 0 3px 0 !important; display: flex; align-items: center; line-height: 1.1; font-size: 16px; transform-origin: left top;
             backface-visibility: hidden; -webkit-backface-visibility: hidden; transform-style: preserve-3d;
             text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; pointer-events: auto;
+            transition: opacity 0.1s;
         }
         .admin-mode .player-tag { cursor: move; }
         .player-tag.disabled-tag { opacity: 0.35; }
+        
+        .player-tag.selected-tag {
+            outline: 2px dashed #ff0059 !important;
+            outline-offset: 4px;
+            background: rgba(255, 0, 89, 0.08) !important;
+        }
+        
+        .player-tag.dimmed-tag {
+            opacity: 0.15 !important;
+            color: #7f8c8d !important;
+        }
+        .player-tag.highlighted-tag {
+            color: #000000 !important;
+            font-weight: 900 !important;
+        }
+        
+        .focus-rect {
+            position: absolute;
+            border: 3px solid #ff0059;
+            background: rgba(255, 0, 89, 0.1);
+            pointer-events: none;
+            z-index: 9998;
+            box-shadow: 0 0 15px rgba(255, 0, 89, 0.4);
+            border-radius: 4px;
+            display: none;
+        }
+        
+        #selection-box {
+            position: fixed;
+            border: 1px solid #0078d7;
+            background: rgba(0, 120, 215, 0.25);
+            pointer-events: none;
+            z-index: 100000;
+            display: none;
+        }
         
         .player-delete-btn { display: none; color: #e74c3c; cursor: pointer; margin-left: 6px; font-size: 14px; font-weight: bold; }
         .admin-mode .player-delete-btn { display: inline-block; }
@@ -71,8 +106,14 @@
         <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
     </div>
     <button id="mobile-add-btn">+</button>
-    <div id="nav-tip">ЛКМ/Палец: Карта | ПКМ/Зажатие: Свойства | Двойной клик/Кнопка «+»: Создать ник</div>
-    <div id="viewport"><div id="canvas"></div></div>
+    <div id="nav-tip">ЛКМ: Карта | Shift + Мышь: Выделение рамкой | Двойной клик: Создать ник</div>
+    <div id="viewport">
+        <div id="canvas">
+            <div id="focus-rectangle" class="focus-rect"></div>
+        </div>
+    </div>
+    
+    <div id="selection-box"></div>
     
     <div id="guide-h" class="guide-line"></div>
     <div id="guide-v" class="guide-line"></div>
@@ -90,6 +131,8 @@
         const guideH = document.getElementById("guide-h");
         const guideV = document.getElementById("guide-v");
         const mobileAddBtn = document.getElementById("mobile-add-btn");
+        const selectionBox = document.getElementById("selection-box");
+        const focusRectangle = document.getElementById("focus-rectangle");
         let isTargetAdmin = localStorage.getItem("sandpex_is_admin") === "true";
         let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
         let isPanning = false, startX, startY, players = [];
@@ -97,10 +140,22 @@
         let dragActive = false, dragPlayerId = null, dragElement = null;
         
         let isCtrlPressed = false;
-        window.addEventListener("keydown", e => { if (e.key === "Control") isCtrlPressed = true; });
-        window.addEventListener("keyup", e => { if (e.key === "Control") isCtrlPressed = false; });
+        let isShiftPressed = false;
+        let isSelecting = false;
+        let selStartX = 0, selStartY = 0;
+        let selectedPlayerIds = new Set();
+        let focusedPlayerId = null;
         
-        function updateTransform() { renderPlayers(); }
+        window.addEventListener("keydown", e => { 
+            if (e.key === "Control") isCtrlPressed = true; 
+            if (e.key === "Shift") isShiftPressed = true;
+        });
+        window.addEventListener("keyup", e => { 
+            if (e.key === "Control") isCtrlPressed = false; 
+            if (e.key === "Shift") isShiftPressed = false;
+        });
+        
+        function updateTransform() { renderPlayers(); repositionFocusRectangle(); }
         
         if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
         
@@ -124,10 +179,65 @@
         });
 
         searchBox.addEventListener("input", () => {
-            const q = searchBox.value.trim().toLowerCase(); if (!q) return;
-            const f = players.find(p => p.name.toLowerCase().includes(q) && (!p.hidden || isTargetAdmin));
-            if (f) { zoom = 1.5; panX = window.innerWidth / 2 - f.x * zoom; panY = window.innerHeight / 2 - f.y * zoom; updateTransform(); }
+            const q = searchBox.value.trim().toLowerCase();
+            if (!q) {
+                focusedPlayerId = null;
+                focusRectangle.style.display = "none";
+                renderPlayers();
+                return;
+            }
+            
+            let exactMatch = null;
+            players.forEach(p => {
+                if ((!p.hidden || isTargetAdmin) && p.name.toLowerCase() === q) {
+                    exactMatch = p;
+                }
+            });
+
+            if (exactMatch) {
+                focusedPlayerId = exactMatch.id;
+                zoom = 1.5;
+                panX = window.innerWidth / 2 - exactMatch.x * zoom;
+                panY = window.innerHeight / 2 - exactMatch.y * zoom;
+                updateTransform();
+            } else {
+                focusedPlayerId = null;
+                focusRectangle.style.display = "none";
+                renderPlayers();
+            }
         });
+
+        function repositionFocusRectangle() {
+            if (!focusedPlayerId) {
+                focusRectangle.style.display = "none";
+                return;
+            }
+            const activeEl = canvas.querySelector(`[data-id="${focusedPlayerId}"]`);
+            if (!activeEl) {
+                focusRectangle.style.display = "none";
+                return;
+            }
+            const sEl = activeEl.querySelector("span");
+            if (!sEl) return;
+            
+            const textWidth = sEl.offsetWidth;
+            const textHeight = sEl.offsetHeight;
+            const p = players.find(pl => pl.id === focusedPlayerId);
+            if (!p) return;
+            
+            const currentScale = (p.scale || 1) * zoom;
+            const finalWidth = (textWidth + 8) * currentScale;
+            const finalHeight = (textHeight + 6) * currentScale;
+            
+            const nextX = p.x * zoom + panX - (4 * currentScale);
+            const nextY = p.y * zoom + panY - (3 * currentScale);
+            
+            focusRectangle.style.left = nextX + "px";
+            focusRectangle.style.top = nextY + "px";
+            focusRectangle.style.width = finalWidth + "px";
+            focusRectangle.style.height = finalHeight + "px";
+            focusRectangle.style.display = "block";
+        }
 
         function createNewPlayer(clientX, clientY) {
             if (!isTargetAdmin) return;
@@ -138,10 +248,22 @@
             players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1, hidden: false });
             renderPlayers();
         }
-
         let mapHoldTimer;
         viewport.addEventListener("mousedown", e => {
             if (e.button !== 0 || dragActive) return;
+            if (isShiftPressed) {
+                isSelecting = true;
+                selStartX = e.clientX;
+                selStartY = e.clientY;
+                selectionBox.style.left = selStartX + "px";
+                selectionBox.style.top = selStartY + "px";
+                selectionBox.style.width = "0px";
+                selectionBox.style.height = "0px";
+                selectionBox.style.display = "block";
+                if (!isCtrlPressed) selectedPlayerIds.clear();
+                e.preventDefault();
+                return;
+            }
             if (e.target === viewport) {
                 mapHoldTimer = setTimeout(() => {
                     createNewPlayer(e.clientX, e.clientY);
@@ -153,14 +275,52 @@
 
         window.addEventListener("mousemove", e => { 
             clearTimeout(mapHoldTimer);
+            if (isSelecting) {
+                const currentX = e.clientX;
+                const currentY = e.clientY;
+                const x = Math.min(selStartX, currentX);
+                const y = Math.min(selStartY, currentY);
+                const width = Math.abs(selStartX - currentX);
+                const height = Math.abs(selStartY - currentY);
+                
+                selectionBox.style.left = x + "px";
+                selectionBox.style.top = y + "px";
+                selectionBox.style.width = width + "px";
+                selectionBox.style.height = height + "px";
+                
+                const boxRect = { left: x, top: y, right: x + width, bottom: y + height };
+                const tags = canvas.querySelectorAll(".player-tag");
+                tags.forEach(tag => {
+                    const tagId = parseInt(tag.getAttribute("data-id"), 10);
+                    const tagRect = tag.getBoundingClientRect();
+                    const overlap = !(boxRect.right < tagRect.left || 
+                                      boxRect.left > tagRect.right || 
+                                      boxRect.bottom < tagRect.top || 
+                                      boxRect.top > tagRect.bottom);
+                    if (overlap) {
+                        selectedPlayerIds.add(tagId);
+                    } else {
+                        if (!isCtrlPressed) selectedPlayerIds.delete(tagId);
+                    }
+                });
+                renderPlayers();
+                return;
+            }
             if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
         });
 
-        window.addEventListener("mouseup", () => { clearTimeout(mapHoldTimer); isPanning = false; });
+        window.addEventListener("mouseup", () => { 
+            clearTimeout(mapHoldTimer); 
+            isPanning = false; 
+            if (isSelecting) {
+                isSelecting = false;
+                selectionBox.style.display = "none";
+            }
+        });
 
         viewport.addEventListener("dblclick", e => {
             e.preventDefault();
-            if (e.target === viewport) {
+            if (e.target === viewport && !isShiftPressed) {
                 createNewPlayer(e.clientX, e.clientY);
             }
         });
@@ -258,17 +418,29 @@
         }
         function renderPlayers(){
             const oldTags = canvas.querySelectorAll('.player-tag');
-            oldTags.forEach(t => t.remove());
+            oldTags.forEach(t => {
+                if (t.id !== "focus-rectangle") t.remove();
+            });
+
+            const q = searchBox.value.trim().toLowerCase();
 
             players.forEach(p => {
-                // 4) Если ник отключен админом и мы обычный игрок — полностью скрываем его
                 if (p.hidden && !isTargetAdmin) return;
 
                 const t = document.createElement("div"); t.className = "player-tag";
                 t.setAttribute("data-id", p.id);
                 
-                // 4) Если ник скрыт, админ видит его полупрозрачным
                 if (p.hidden && isTargetAdmin) { t.classList.add("disabled-tag"); }
+                if (selectedPlayerIds.has(p.id)) { t.classList.add("selected-tag"); }
+
+                // Реализация логики умного поиска
+                if (q) {
+                    if (p.name.toLowerCase().startsWith(q)) {
+                        t.classList.add("highlighted-tag");
+                    } else {
+                        t.classList.add("dimmed-tag");
+                    }
+                }
                 
                 const s = document.createElement("span"); s.textContent = p.name; t.appendChild(s);
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
@@ -281,7 +453,12 @@
                 const currentY = p.y * zoom + panY;
                 
                 t.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0) scale(" + currentScale + ")";
-                t.style.color = p.color || "#000000";
+                
+                // Если поиск пуст или ник совпал с его началом — оставляем оригинальный цвет (или #000000 / #FF0059 для Легенд)
+                if (!q || p.name.toLowerCase().startsWith(q)) {
+                    t.style.color = p.color || "#000000";
+                }
+                
                 t.style.zIndex = p.layer !== undefined ? p.layer : 1;
                 
                 if (p.pinned) {
@@ -333,7 +510,6 @@
             const nextY = targetY * zoom + panY;
             dragElement.style.transform = "translate3d(" + nextX + "px, " + nextY + "px, 0) scale(" + currentScale + ")";
             
-            // 3) Если зажат CTRL, полностью пропускаем расчеты магнитов и синих линий выравнивания
             if (!isCtrlPressed) {
                 let currentRect = dragElement.getBoundingClientRect();
 
@@ -365,7 +541,6 @@
                                         snapV = true; guideV.style.left = currentRect.left + "px"; guideV.style.display = "block";
                                     }
                                 }
-
                                 let standardGapY = Math.abs(otherRect.top - secRect.top);
                                 if(standardGapY > 10) {
                                     if(Math.abs(Math.abs(currentRect.top - otherRect.top) - standardGapY) < 15) {
