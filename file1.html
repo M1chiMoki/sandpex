@@ -209,23 +209,21 @@
         function executeCheatCheck() {
             const code = cheatInput.value.trim().toLowerCase();
             const cheatMap = {
-                "mjv4dGVzdA==": () => { playerScore = 25; },   
-                "NTB4dGVzdA==": () => { playerScore = 50; },   
-                "MTAweHRlc3Q=": () => { playerScore = 100; }, 
-                "MjAweHRlc3Q=": () => { playerScore = 200; }, 
-                "MjQ5eHRlc3Q=": () => { playerScore = 249; }, 
-                "MjUweHRlc3Q=": () => { playerScore = 250; }, 
-                "MjU6eHRlc3Q=": () => { playerScore = 255; }, 
-                "Z29kdGVzdA==": () => { godModeActive = true; },   
-                "bW9ydGFsdGVzdA==": () => { godModeActive = false; },
-                "ZnJlZXplYm90": () => { isBotFrozen = true; },
-                "dW5mcmVlemVib3Q=": () => { isBotFrozen = false; }
+                "25xtest": () => { playerScore = 25; },   
+                "50xtest": () => { playerScore = 50; },   
+                "100xtest": () => { playerScore = 100; }, 
+                "200xtest": () => { playerScore = 200; }, 
+                "249xtest": () => { playerScore = 249; }, 
+                "250xtest": () => { playerScore = 250; }, 
+                "256xtest": () => { playerScore = 255; }, 
+                "godtest": () => { godModeActive = true; },   
+                "mortaltest": () => { godModeActive = false; },
+                "freezebot": () => { isBotFrozen = true; },
+                "unfreezebot": () => { isBotFrozen = false; }
             };
 
-            const encoded = btoa(code);
-
-            if (cheatMap[encoded] !== undefined) {
-                cheatMap[encoded]();
+            if (cheatMap[code] !== undefined) {
+                cheatMap[code]();
                 scorePlayerEl.textContent = playerScore;
                 updateBossEnvironment();
                 clearHardcoreElements();
