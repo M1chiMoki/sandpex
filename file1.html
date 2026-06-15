@@ -15,7 +15,6 @@
         
         #game-stage { width: 900px; height: 600px; border: 4px solid #000000; position: relative; background: #fafafa; overflow: hidden; display: block; transition: background 0.5s ease; }
         
-        /* Декорации ада: Переливание рамки поля и глитч фона на 250+ уровне */
         #game-stage.boss-mode {
             animation: borderNeon 5s linear infinite, bgGlitch 4s ease-in-out infinite alternate;
         }
@@ -38,7 +37,6 @@
         
         #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; }
         
-        /* Чёрный пепел (Помехи из ников игроков) */
         .glitch-tag { position: absolute; font-weight: bold; font-size: 14px; color: #000000; border: 2px solid #000000; background: rgba(0, 0, 0, 0.08); padding: 4px 8px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 5; }
         
         .red-orb { position: absolute; font-size: 22px; font-weight: 900; color: #ff003c; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none; z-index: 6; }
@@ -69,8 +67,8 @@
             <span id="score-divider">:</span>
             <span id="score-bot">0</span>
         </div>
-        <div id="player" class="paddle player-paddle"></div>
-        <div id="bot" class="paddle bot-paddle"></div>
+        <div id="player" class="paddle player-paddle">Mendaly</div>
+        <div id="bot" class="paddle bot-paddle">SadFile</div>
         <div id="ball">O</div>
     </div>
 
@@ -84,7 +82,7 @@
 
     <script>
         let legends = [];
-        let ordinaryPlayers = []; // База обычных игроков для генерации пепла
+        let ordinaryPlayers = [];
         let playerScore = 0, botScore = 0;
         
         const stage = document.getElementById("game-stage");
@@ -118,14 +116,8 @@
                     if (inputBuffer.endsWith(scoreValue + "xtest")) {
                         playerScore = (scoreValue === 256) ? 255 : scoreValue;
                         scorePlayerEl.textContent = playerScore;
-                        
-                        // Если чит-код закидывает нас на 250+ уровень, сразу активируем визуальные эффекты
-                        if (playerScore >= 250) {
-                            stage.classList.add("boss-mode");
-                        } else {
-                            stage.classList.remove("boss-mode");
-                        }
-                        
+                        if (playerScore >= 250) stage.classList.add("boss-mode");
+                        else stage.classList.remove("boss-mode");
                         inputBuffer = "";
                     }
                 });
@@ -136,7 +128,6 @@
                 const r = await fetch("players.json");
                 if (r.ok) {
                     const all = await r.json();
-                    // Разделяем базу данных
                     legends = all.filter(p => p.layer === 2 || p.description === "Легенда");
                     ordinaryPlayers = all.filter(p => p.layer !== 2 && p.description !== "Легенда");
                 }
@@ -153,12 +144,12 @@
             botEl.textContent = getRandomLegend();
             
             setTimeout(() => {
-                playerWidth = playerEl.offsetWidth;
-                botWidth = botEl.offsetWidth;
+                playerWidth = playerEl.offsetWidth || 120;
+                botWidth = botEl.offsetWidth || 120;
                 resetPositions();
                 gameActive = true;
                 requestAnimationFrame(gameLoop);
-            }, 50);
+            }, 100);
         }
 
         function getRandomLegend() {
@@ -202,11 +193,10 @@
             if (playerScore < 250 || obstacles.length >= 4) return;
             const el = document.createElement("div");
             el.className = "glitch-tag";
-            // Пепел = ники обычных игроков
             el.textContent = getRandomOrdinary();
             stage.appendChild(el);
 
-            const width = el.offsetWidth;
+            const width = el.offsetWidth || 100;
             obstacles.push({
                 el: el,
                 x: Math.random() * (900 - width),
@@ -259,7 +249,7 @@
             ballEl.style.display = "none";
             clearHardcoreElements();
 
-            if (botScore > 5) {
+            if (botScore >= 5) {
                 gameActive = false;
                 document.getElementById("overlay-title").textContent = "Вы проиграли!";
                 overlay.style.display = "flex";
@@ -275,7 +265,7 @@
             if (playerScore === 250 && isPlayerGoal) {
                 delay = 3000;
                 readyBanner.style.display = "block";
-                stage.classList.add("boss-mode"); // Включаем визуальные декорации ада
+                stage.classList.add("boss-mode");
             }
 
             setTimeout(() => {
@@ -284,8 +274,8 @@
                 botEl.textContent = getRandomLegend();
                 
                 setTimeout(() => {
-                    playerWidth = playerEl.offsetWidth;
-                    botWidth = botEl.offsetWidth;
+                    playerWidth = playerEl.offsetWidth || 120;
+                    botWidth = botEl.offsetWidth || 120;
                     
                     resetPositions();
                     ballEl.style.display = "flex";
@@ -418,7 +408,9 @@
         }
 
         document.getElementById("retry-btn").addEventListener("click", () => {
-            playerScore = 0; botScore = 0;
+            // Исправлено: Сбрасываем счетчики в коде, чтобы не было вечного проигрыша
+            playerScore = 0; 
+            botScore = 0;
             scorePlayerEl.textContent = "0";
             scoreBotEl.textContent = "0";
             overlay.style.display = "none";
@@ -429,8 +421,8 @@
             botEl.textContent = getRandomLegend();
             
             setTimeout(() => {
-                playerWidth = playerEl.offsetWidth;
-                botWidth = botEl.offsetWidth;
+                playerWidth = playerEl.offsetWidth || 120;
+                botWidth = botEl.offsetWidth || 120;
                 resetPositions();
                 ballEl.style.display = "flex";
                 inPause = false;
