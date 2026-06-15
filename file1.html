@@ -104,6 +104,7 @@
         let legends = [];
         let ordinaryPlayers = [];
         let playerScore = 0, botScore = 0;
+        let animationFrameId = null;
         
         const stage = document.getElementById("game-stage");
         const playerEl = document.getElementById("player");
@@ -131,12 +132,39 @@
         let obstacles = [];
         let redOrbs = [];
 
-        // Аппаратный, безопасный и 100% точный метод хэширования через браузерный Web Crypto API
-        async function getSHA256Hash(text) {
-            const msgBuffer = new TextEncoder().encode(text);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        function sha256Sync(str) {
+            var buffer = new TextEncoder().encode(str);
+            var words = [];
+            for (var i = 0; i < buffer.length; i++) {
+                words[i >> 2] |= buffer[i] << (24 - (i % 4) * 8);
+            }
+            var asciiLength = buffer.length;
+            var hash = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+            var k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+            words[asciiLength >> 2] |= 0x80 << (24 - (asciiLength % 4) * 8);
+            while (((words.length * 4) % 64) !== 56) { words.push(0); }
+            words.push(0); words.push(asciiLength * 8);
+            for (var j = 0; j < words.length; j += 16) {
+                var w = words.slice(j, j + 16); var oldHash = hash.slice(0);
+                for (var i = 0; i < 64; i++) {
+                    if (i >= 16) {
+                        var w15 = w[i - 15], w2 = w[i - 2];
+                        var s0 = ((w15>>>7)|(w15<<25)) ^ ((w15>>>18)|(w15<<14)) ^ (w15>>>3);
+                        var s1 = ((w2>>>17)|(w2<<15)) ^ ((w2>>>19)|(w2<<13)) ^ (w2>>>10);
+                        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+                    }
+                    var a = hash[0], b = hash[1], c = hash[2], d = hash[3], e = hash[4], f = hash[5], g = hash[6], h = hash[7];
+                    var S1 = ((e>>>6)|(e<<26)) ^ ((e>>>11)|(e<<21)) ^ ((e>>>25)|(e<<7));
+                    var ch = (e & f) ^ ((~e) & g);
+                    var temp1 = (h + S1 + ch + k[i] + w[i]) | 0;
+                    var S0 = ((a>>>2)|(a<<30)) ^ ((a>>>13)|(a<<19)) ^ ((a>>>22)|(a<<10));
+                    var maj = (a & b) ^ (a & c) ^ (b & c);
+                    var temp2 = (S0 + maj) | 0;
+                    hash = [(temp1 + temp2) | 0, a, b, c, (d + temp1) | 0, e, f, g];
+                }
+                for (var i = 0; i < 8; i++) { hash[i] = (hash[i] + oldHash[i]) | 0; }
+            }
+            return hash.map(function(val) { var s = (val >>> 0).toString(16); while (s.length < 8) s = '0' + s; return s; }).join('');
         }
 
         settingsBtn.addEventListener("click", () => {
@@ -152,34 +180,29 @@
             inPause = false;
         });
 
-        // Железная сверка кодов по SHA-256 хэшам (Абсолютная защита от чтения на GitHub)
-        async function executeCheatCheck() {
+        function executeCheatCheck() {
             const code = cheatInput.value.trim().toLowerCase();
-            const hashed = await getSHA256Hash(code);
-            
-            // Зашифрованные хэши для: 25xtest, 50xtest, 100xtest, 200xtest, 249xtest, 250xtest, 256xtest, godtest, mortaltest
+            const hashed = sha256Sync(code);
             const cheatMap = {
                 "3be059f032252a17088924b179294248aa6180a52df0fae627c2fe6681b95b87": () => { playerScore = 25; },
                 "ea66f77ccb02e70e9a7e6ff8161b94ea9c07e05fc8645e7fdb0ea628f26db9cc": () => { playerScore = 50; },
                 "d5d5945ec598f4e24ee7662c1be833efdcd38fe4b8b6f3a7633cc47da0cc3283": () => { playerScore = 100; },
                 "cb25bfd33f7c32bf28d098e945fe96b1853da99bc6e7f223f6685fb1ee3ff5fb": () => { playerScore = 200; },
-                "0f45512ae30c5e7b399ccbc4ca355df040a43057187c53e83918a5df9775be37": () => { playerScore = 249; }, // 249xtest
+                "0f45512ae30c5e7b399ccbc4ca355df040a43057187c53e83918a5df9775be37": () => { playerScore = 249; }, 
                 "d4eb20fc5ba98db5f40f09ee395dc3d97ba23c914da7dbca03b9b478335f606a": () => { playerScore = 250; },
-                "d72d633e08fbe7d507b949fefee4a6136fa513da19bc0195ee88301cf1294875": () => { playerScore = 255; }, // 256xtest
-                "fcd48911bfdf013bfd3f18e95df1881cf71cf70ff22b8ff34f2d34199c0f994a": () => { godModeActive = true; },  // godtest
-                "a19ca4d9247eb97bd0b3294326532d56d9539d4825dd8b8352614b62095f9227": () => { godModeActive = false; } // mortaltest
+                "d72d633e08fbe7d507b949fefee4a6136fa513da19bc0195ee88301cf1294875": () => { playerScore = 255; }, 
+                "fcd48911bfdf013bfd3f18e95df1881cf71cf70ff22b8ff34f2d34199c0f994a": () => { godModeActive = true; },  
+                "a19ca4d9247eb97bd0b3294326532d56d9539d4825dd8b8352614b62095f9227": () => { godModeActive = false; } 
             };
-
             if (cheatMap[hashed] !== undefined) {
                 cheatMap[hashed]();
                 scorePlayerEl.textContent = playerScore;
                 if (playerScore >= 250) stage.classList.add("boss-mode");
                 else stage.classList.remove("boss-mode");
             }
-
             consoleOverlay.style.display = "none";
             cheatInput.value = "";
-            inPause = false; 
+            inPause = false;
         }
 
         submitArrowBtn.addEventListener("click", executeCheatCheck);
@@ -205,7 +228,8 @@
                 botWidth = botEl.offsetWidth || 120;
                 resetPositions();
                 gameActive = true;
-                requestAnimationFrame(gameLoop);
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                animationFrameId = requestAnimationFrame(gameLoop);
             }, 50);
         }
 
@@ -276,6 +300,7 @@
 
         function triggerEpicTransition() {
             gameActive = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
             clearHardcoreElements();
             curtain.style.display = "grid";
             curtain.innerHTML = "";
@@ -314,9 +339,9 @@
             ballEl.style.display = "none";
             clearHardcoreElements();
 
-            // Проиграть можно только если НЕ активен режим бога (godModeActive)
             if (botScore === 5 && !godModeActive) {
                 gameActive = false;
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 document.getElementById("overlay-title").textContent = "Вы проиграли!";
                 overlay.style.display = "flex";
                 return;
@@ -327,7 +352,6 @@
                 return;
             }
 
-            // На пороге 250 уровня задержка увеличивается до 3 секунд с выводом баннера
             let delay = 1000;
             if (playerScore === 250 && isPlayerGoal) {
                 delay = 3000;
@@ -337,7 +361,6 @@
 
             setTimeout(() => {
                 readyBanner.style.display = "none";
-                // Смена ников происходит не при столкновении, а при забитии гола случайным образом
                 playerEl.textContent = getRandomLegend();
                 botEl.textContent = getRandomLegend();
                 
@@ -365,13 +388,11 @@
                     if (ballX > 880) ballX = 880;
                 }
 
-                // Спавн элементов ада на 250+ уровне
                 if (playerScore >= 250) {
                     if (Math.random() < 0.005) spawnObstacle();
                     if (Math.random() < 0.008) spawnRedOrb();
                 }
 
-                // Движение пепла из ников обычных игроков
                 obstacles.forEach(o => {
                     o.x += o.speedX;
                     o.y += o.speedY;
@@ -384,32 +405,28 @@
                     o.el.style.top = o.y + "px";
                     o.el.style.transform = `rotate(${o.angle}deg)`;
 
-                    // Столкновение мяча с летающим пеплом (ники игроков)
                     if (ballX + 20 >= o.x && ballX <= o.x + o.width && ballY + 20 >= o.y && ballY <= o.y + o.height) {
                         ballSpeedY = -ballSpeedY;
                         ballSpeedX += (Math.random() * 2 - 1) * 2; 
                     }
                 });
 
-                // Движение и обсчет красных сфер смерти
                 for (let i = redOrbs.length - 1; i >= 0; i--) {
                     let orb = redOrbs[i];
                     orb.y += orb.speedY;
                     orb.el.style.left = orb.x + "px";
                     orb.el.style.top = orb.y + "px";
 
-                    // Проверка столкновения сферы смерти с синей платформой игрока
                     if (orb.y + 18 >= 535 && orb.y <= 570 && orb.x + 18 >= playerX && orb.x <= playerX + playerWidth) {
-                        // Ловим сферу: проигрыш засчитывается только если НЕ включен godModeActive
                         if (!godModeActive) {
                             gameActive = false;
+                            if (animationFrameId) cancelAnimationFrame(animationFrameId);
                             orb.el.remove();
                             clearHardcoreElements();
                             document.getElementById("overlay-title").textContent = "Вы поймали сферу смерти!";
                             overlay.style.display = "flex";
                             return;
                         } else {
-                            // В режиме бога сферы просто исчезают при касании, не ломая игру
                             orb.el.remove();
                             redOrbs.splice(i, 1);
                         }
@@ -432,7 +449,6 @@
                     botEl.style.left = botX + "px";
                 }
 
-                // Хитбоксы: Отскок от верхней платформы (Бот)
                 if (ballSpeedY < 0 && ballY <= 65 && ballY >= 30) {
                     if (ballX + 20 >= botX && ballX <= botX + botWidth) {
                         ballSpeedY = -ballSpeedY * 1.03;
@@ -442,7 +458,6 @@
                     }
                 }
 
-                // Хитбоксы: Отскок от нижней платформы (Игрок)
                 if (ballSpeedY > 0 && ballY + 20 >= 535 && ballY <= 570) {
                     if (ballX + 20 >= playerX && ballX <= playerX + playerWidth) {
                         ballSpeedY = -ballSpeedY * 1.03;
@@ -459,10 +474,11 @@
             ballEl.style.left = ballX + "px";
             ballEl.style.top = ballY + "px";
 
-            requestAnimationFrame(gameLoop);
+            animationFrameId = requestAnimationFrame(gameLoop);
         }
 
         document.getElementById("retry-btn").addEventListener("click", () => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
             playerScore = 0; 
             botScore = 0;
             scorePlayerEl.textContent = "0";
@@ -479,13 +495,14 @@
                 botWidth = botEl.offsetWidth || 120;
                 resetPositions();
                 ballEl.style.display = "flex";
-                // ЖЕСТКИЙ ФИКС: Снимаем зависание паузы при ретрае
                 inPause = false; 
                 gameActive = true;
+                animationFrameId = requestAnimationFrame(gameLoop);
             }, 50);
         });
 
         document.getElementById("back-btn").addEventListener("click", () => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
             clearHardcoreElements();
             window.location.href = "index.html";
         });
