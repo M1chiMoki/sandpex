@@ -32,11 +32,9 @@
         }
         .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; z-index: 10; pointer-events: none; }
         .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); bottom: 30px; }
-        .bot-paddle { position: absolute; color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease, opacity 0.2s ease; }
+        .bot-paddle { position: absolute; color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease, opacity 0.2s ease; overflow: hidden; }
         
-        .boss-crack-overlay { position: absolute; top: -3px; left: -3px; width: calc(100% + 6px); height: calc(100% + 6px); pointer-events: none; z-index: 11; overflow: visible; }
-        .boss-crack-line { fill: none; stroke: #000000; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.3s ease; }
-        .boss-crack-line.ignited { stroke: #ff003c !important; filter: drop-shadow(0 0 4px #ff003c) drop-shadow(0 0 8px #ff003c); }
+        #crack-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; }
 
         .bot-heavy-shake-1 { animation: heavyShake1 0.4s ease-in-out; }
         .bot-heavy-shake-2 { animation: heavyShake2 0.4s ease-in-out; }
@@ -136,7 +134,7 @@
         </div>
         <div id="player" class="paddle player-paddle"></div>
         <div id="bot" class="paddle bot-paddle">
-            <svg class="boss-crack-overlay" id="crack-svg"></svg>
+            <canvas id="crack-canvas"></canvas>
             <span id="bot-text"></span>
         </div>
         <div id="ball">O</div>
@@ -174,7 +172,8 @@
         const playerEl = document.getElementById("player");
         const botEl = document.getElementById("bot");
         const botTextEl = document.getElementById("bot-text");
-        const crackSvg = document.getElementById("crack-svg");
+        const crackCanvas = document.getElementById("crack-canvas");
+        const crackCtx = crackCanvas.getContext("2d");
         const ballEl = document.getElementById("ball");
         const scorePlayerEl = document.getElementById("score-player");
         const scoreBotEl = document.getElementById("score-bot");
@@ -214,6 +213,9 @@
         let redOrbs = [];
         let ashParticles = [];
         let shatterParticles = [];
+        let canvasCracks = [];
+        let crackColor = "#000000";
+        let crackGlow = false;
         
         let leftRibbonY = 0, rightRibbonY = 0;
         let orbSpeedMultiplier = 1.0;
@@ -305,6 +307,8 @@
             setTimeout(() => {
                 playerWidth = playerEl.offsetWidth || 120;
                 botWidth = botEl.offsetWidth || 120;
+                crackCanvas.width = botWidth;
+                crackCanvas.height = 35;
                 resetPositions();
                 gameActive = true;
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -364,13 +368,16 @@
                 gameTitle.textContent = "sandpex — Легендарный Пинг-Понг";
                 document.getElementById("left-ribbon").style.display = "none";
                 document.getElementById("right-ribbon").style.display = "none";
+                leftTrack.innerHTML = "";
+                rightTrack.innerHTML = "";
                 removeAsh();
                 removeAttackButton();
                 plasmaZones.forEach(z => { z.style.display = "none"; });
                 activePlasmas = [];
                 botEl.style.filter = "none";
                 botEl.className = "paddle bot-paddle";
-                crackSvg.innerHTML = "";
+                canvasCracks = [];
+                crackCtx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
             }
         }
         function removeAsh() {
@@ -386,33 +393,55 @@
             isPadOverAttack = false;
         }
 
-        function generateChaosCrack() {
-            const w = botWidth + 6;
-            const h = 41;
-            const edges = [
-                {x: Math.random() * w, y: 0},
-                {x: Math.random() * w, y: h},
-                {x: 0, y: Math.random() * h},
-                {x: w, y: Math.random() * h}
-            ];
-            let p1 = edges[Math.floor(Math.random() * edges.length)];
-            let p2 = edges[Math.floor(Math.random() * edges.length)];
-            while (p1 === p2) { p2 = edges[Math.floor(Math.random() * edges.length)]; }
-            
-            const midX = (p1.x + p2.x) / 2 + (Math.random() * 30 - 15);
-            const midY = (p1.y + p2.y) / 2 + (Math.random() * 14 - 7);
-            
-            const line1 = document.createElementNS("http://w3.org", "line");
-            line1.setAttribute("x1", p1.x); line1.setAttribute("y1", p1.y);
-            line1.setAttribute("x2", midX); line1.setAttribute("y2", midY);
-            line1.setAttribute("class", "boss-crack-line");
-            crackSvg.appendChild(line1);
+        function addCanvasCrack() {
+            let startEdge = Math.floor(Math.random() * 4);
+            let sx = 0, sy = 0;
+            if (startEdge === 0) { sx = Math.random() * botWidth; sy = 0; }
+            else if (startEdge === 1) { sx = botWidth; sy = Math.random() * 35; }
+            else if (startEdge === 2) { sx = Math.random() * botWidth; sy = 35; }
+            else { sx = 0; sy = Math.random() * 35; }
 
-            const line2 = document.createElementNS("http://w3.org", "line");
-            line2.setAttribute("x1", midX); line2.setAttribute("y1", midY);
-            line2.setAttribute("x2", p2.x); line2.setAttribute("y2", p2.y);
-            line2.setAttribute("class", "boss-crack-line");
-            crackSvg.appendChild(line2);
+            let points = [{x: sx, y: sy}];
+            let curX = sx, curY = sy;
+            let segments = 3 + Math.floor(Math.random() * 3);
+
+            for (let i = 0; i < segments; i++) {
+                let dx = (Math.random() * 40 - 20);
+                let dy = (Math.random() * 16 - 8);
+                curX += dx; curY += dy;
+                curX = Math.max(2, Math.min(botWidth - 2, curX));
+                curY = Math.max(2, Math.min(33, curY));
+                points.push({x: curX, y: curY});
+            }
+            canvasCracks.push(points);
+            redrawCracks();
+        }
+
+        function redrawCracks() {
+            crackCtx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
+            crackCtx.lineWidth = 2.5;
+            crackCtx.lineCap = "round";
+            crackCtx.lineJoin = "round";
+
+            if (crackGlow) {
+                crackCtx.strokeStyle = "#ff003c";
+                crackCtx.shadowColor = "#ff003c";
+                crackCtx.shadowBlur = 8;
+            } else {
+                crackCtx.strokeStyle = crackColor;
+                crackCtx.shadowBlur = 0;
+            }
+
+            canvasCracks.forEach(path => {
+                if (path.length < 2) return;
+                crackCtx.beginPath();
+                crackCtx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    crackCtx.lineTo(path[i].x, path[i].y);
+                }
+                crackCtx.stroke();
+            });
+            crackCtx.shadowBlur = 0;
         }
 
         function spawnAttackButton() {
@@ -470,8 +499,8 @@
             
             if (attackHits <= 4) {
                 botEl.classList.add("bot-vibrate");
-                generateChaosCrack();
-                generateChaosCrack();
+                addCanvasCrack();
+                addCanvasCrack();
                 
                 if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 4px #ff003c)";
                 else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) blur(0.3px)";
@@ -494,8 +523,8 @@
             
             setTimeout(() => {
                 botEl.classList.remove("bot-heavy-shake-1");
-                const lines = document.querySelectorAll(".boss-crack-line");
-                lines.forEach(l => l.classList.add("ignited"));
+                crackGlow = true;
+                redrawCracks();
                 botEl.classList.add("bot-heavy-shake-2");
                 
                 setTimeout(() => {
@@ -541,7 +570,7 @@
             
             botEl.style.opacity = "0";
             ballEl.style.display = "none";
-            crackSvg.innerHTML = "";
+            crackCtx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
             
             for (let i = 0; i < 55; i++) {
                 let shard = document.createElement("div");
@@ -656,6 +685,9 @@
                 setTimeout(() => {
                     playerWidth = playerEl.offsetWidth || 120;
                     botWidth = botEl.offsetWidth || 120;
+                    crackCanvas.width = botWidth;
+                    crackCanvas.height = 35;
+                    redrawCracks();
                     
                     resetPositions();
                     ballEl.style.display = "flex";
@@ -873,7 +905,6 @@
 
             animationFrameId = requestAnimationFrame(gameLoop);
         }
-
         function triggerFullReset() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             playerScore = 0;
@@ -882,6 +913,7 @@
             godModeActive = false;
             isBotFrozen = false;
             isFinalSequence = false;
+            crackGlow = false;
             scorePlayerEl.textContent = "0";
             scoreBotEl.textContent = "0";
             scorePlayerEl.className = "";
@@ -900,15 +932,26 @@
             clearHardcoreElements();
             removeAsh();
             
+            leftTrack.innerHTML = "";
+            rightTrack.innerHTML = "";
+            document.getElementById("left-ribbon").style.display = "none";
+            document.getElementById("right-ribbon").style.display = "none";
+            
             playerEl.textContent = getRandomLegend();
             botTextEl.textContent = getRandomLegend();
             botEl.style.filter = "none";
             botEl.className = "paddle bot-paddle";
-            crackSvg.innerHTML = "";
+            
+            canvasCracks = [];
+            if (crackCanvas.width && crackCanvas.height) {
+                crackCtx.clearRect(0, 0, crackCanvas.width, crackCanvas.height);
+            }
             
             setTimeout(() => {
                 playerWidth = playerEl.offsetWidth || 120;
                 botWidth = botEl.offsetWidth || 120;
+                crackCanvas.width = botWidth;
+                crackCanvas.height = 35;
                 resetPositions();
                 ballEl.style.display = "flex";
                 gameActive = true;
