@@ -11,7 +11,7 @@
             font-weight: normal; font-style: normal;
         }
         * { box-sizing: border-box; font-family: 'Minecraftia', sans-serif !important; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; color: #000000; display: flex; justify-content: center; align-items: center; transition: background 0.5s ease; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff !important; color: #000000; display: flex; justify-content: center; align-items: center; transition: background 0.8s ease; }
         
         #game-stage { width: 900px; height: 600px; border: 4px solid #000000; position: relative; background: #fafafa; overflow: hidden; display: block; transition: background 0.5s ease; }
         
@@ -32,20 +32,39 @@
         }
         .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; z-index: 10; pointer-events: none; }
         .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); bottom: 30px; }
-        .bot-paddle { position: absolute; color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease, text-shadow 0.2s ease, opacity 0.2s ease; }
+        .bot-paddle { position: absolute; color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; transition: filter 0.2s ease, opacity 0.2s ease; }
         
-        .bot-vibrate { animation: paddleShake 0.12s linear infinite; }
+        .boss-crack-overlay { position: absolute; top: -3px; left: -3px; width: calc(100% + 6px); height: calc(100% + 6px); pointer-events: none; z-index: 11; overflow: visible; }
+        .boss-crack-line { fill: none; stroke: #000000; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.3s ease; }
+        .boss-crack-line.ignited { stroke: #ff003c !important; filter: drop-shadow(0 0 4px #ff003c) drop-shadow(0 0 8px #ff003c); }
+
+        .bot-heavy-shake-1 { animation: heavyShake1 0.4s ease-in-out; }
+        .bot-heavy-shake-2 { animation: heavyShake2 0.4s ease-in-out; }
+        .bot-heavy-shake-3 { animation: heavyShake3 0.6s ease-in-out; }
         
-        @keyframes paddleShake {
-            0% { transform: translate(0, 0); }
-            25% { transform: translate(-3px, 2px); }
-            50% { transform: translate(3px, -2px); }
-            75% { transform: translate(-2px, -1px); }
-            100% { transform: translate(2px, 2px); }
+        @keyframes heavyShake1 {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-8px, 4px); }
+            40% { transform: translate(6px, -5px); }
+            60% { transform: translate(-5px, -3px); }
+            80% { transform: translate(7px, 3px); }
+        }
+        @keyframes heavyShake2 {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(9px, -6px); }
+            40% { transform: translate(-8px, 5px); }
+            60% { transform: translate(6px, 4px); }
+            80% { transform: translate(-7px, -3px); }
+        }
+        @keyframes heavyShake3 {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 90% { transform: translate(-12px, 7px); }
+            30%, 70% { transform: translate(11px, -8px); }
+            50% { transform: translate(-8px, -6px); }
         }
 
         .bot-particle-shard { position: absolute; font-size: 12px; font-weight: 900; color: #ff003c; pointer-events: none; z-index: 12; will-change: transform, opacity; }
-        .final-projectile { position: absolute; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 15px #ffffff, 0 0 30px #ffffff; z-index: 11; pointer-events: none; will-change: transform; }
+        .final-projectile { position: absolute; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 15px #ffffff, 0 0 30px #ffffff; z-index: 13; pointer-events: none; will-change: transform; }
 
         #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 9; pointer-events: none; }
         
@@ -116,7 +135,10 @@
             <span id="score-bot">0</span>
         </div>
         <div id="player" class="paddle player-paddle"></div>
-        <div id="bot" class="paddle bot-paddle"></div>
+        <div id="bot" class="paddle bot-paddle">
+            <svg class="boss-crack-overlay" id="crack-svg"></svg>
+            <span id="bot-text"></span>
+        </div>
         <div id="ball">O</div>
         
         <div id="countdown-overlay">
@@ -151,6 +173,8 @@
         const stage = document.getElementById("game-stage");
         const playerEl = document.getElementById("player");
         const botEl = document.getElementById("bot");
+        const botTextEl = document.getElementById("bot-text");
+        const crackSvg = document.getElementById("crack-svg");
         const ballEl = document.getElementById("ball");
         const scorePlayerEl = document.getElementById("score-player");
         const scoreBotEl = document.getElementById("score-bot");
@@ -273,7 +297,7 @@
             } else {
                 playerEl.textContent = getRandomLegend();
             }
-            botEl.textContent = getRandomLegend();
+            botTextEl.textContent = getRandomLegend();
             
             buildRibbons();
             updateBossEnvironment();
@@ -346,6 +370,7 @@
                 activePlasmas = [];
                 botEl.style.filter = "none";
                 botEl.className = "paddle bot-paddle";
+                crackSvg.innerHTML = "";
             }
         }
         function removeAsh() {
@@ -359,6 +384,35 @@
                 attackButton = null;
             }
             isPadOverAttack = false;
+        }
+
+        function generateChaosCrack() {
+            const w = botWidth + 6;
+            const h = 41;
+            const edges = [
+                {x: Math.random() * w, y: 0},
+                {x: Math.random() * w, y: h},
+                {x: 0, y: Math.random() * h},
+                {x: w, y: Math.random() * h}
+            ];
+            let p1 = edges[Math.floor(Math.random() * edges.length)];
+            let p2 = edges[Math.floor(Math.random() * edges.length)];
+            while (p1 === p2) { p2 = edges[Math.floor(Math.random() * edges.length)]; }
+            
+            const midX = (p1.x + p2.x) / 2 + (Math.random() * 30 - 15);
+            const midY = (p1.y + p2.y) / 2 + (Math.random() * 14 - 7);
+            
+            const line1 = document.createElementNS("http://w3.org", "line");
+            line1.setAttribute("x1", p1.x); line1.setAttribute("y1", p1.y);
+            line1.setAttribute("x2", midX); line1.setAttribute("y2", midY);
+            line1.setAttribute("class", "boss-crack-line");
+            crackSvg.appendChild(line1);
+
+            const line2 = document.createElementNS("http://w3.org", "line");
+            line2.setAttribute("x1", midX); line2.setAttribute("y1", midY);
+            line2.setAttribute("x2", p2.x); line2.setAttribute("y2", p2.y);
+            line2.setAttribute("class", "boss-crack-line");
+            crackSvg.appendChild(line2);
         }
 
         function spawnAttackButton() {
@@ -416,50 +470,67 @@
             
             if (attackHits <= 4) {
                 botEl.classList.add("bot-vibrate");
-                if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) contrast(1.2)";
-                else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(0.3px)";
-                else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 9px #ff003c) contrast(1.8) blur(0.6px)";
-                else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 14px #ff003c) contrast(2.2) invert(0.1) blur(1px)";
+                generateChaosCrack();
+                generateChaosCrack();
                 
-                setTimeout(() => {
-                    botEl.classList.remove("bot-vibrate");
-                }, 500);
+                if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 4px #ff003c)";
+                else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) blur(0.3px)";
+                else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 9px #ff003c) blur(0.5px)";
+                else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 14px #ff003c) invert(0.1) blur(0.8px)";
                 
+                setTimeout(() => { botEl.classList.remove("bot-vibrate"); }, 500);
                 nextAttackSpawnTime = Date.now() + (4000 + Math.random() * 4000);
             } else if (attackHits >= 5) {
-                triggerFinalShatterSequence();
+                triggerThreeHeavyShakes();
             }
         });
 
-        function triggerFinalShatterSequence() {
+        function triggerThreeHeavyShakes() {
             isFinalSequence = true;
             clearHardcoreElements();
             removeAsh();
+
+            botEl.classList.add("bot-heavy-shake-1");
             
-            botEl.classList.add("bot-vibrate");
-            botEl.style.filter = "drop-shadow(0 0 20px #ff003c) contrast(3) invert(0.3)";
-            
+            setTimeout(() => {
+                botEl.classList.remove("bot-heavy-shake-1");
+                const lines = document.querySelectorAll(".boss-crack-line");
+                lines.forEach(l => l.classList.add("ignited"));
+                botEl.classList.add("bot-heavy-shake-2");
+                
+                setTimeout(() => {
+                    botEl.classList.remove("bot-heavy-shake-2");
+                    botEl.classList.add("bot-heavy-shake-3");
+                    
+                    setTimeout(() => {
+                        botEl.classList.remove("bot-heavy-shake-3");
+                        slowDropWhiteBall();
+                    }, 700);
+                }, 500);
+            }, 500);
+        }
+
+        function slowDropWhiteBall() {
             let proj = document.createElement("div");
             proj.className = "final-projectile";
-            proj.style.left = "442px";
-            proj.style.top = "-20px";
+            proj.style.left = (botX + (botWidth / 2) - 8) + "px";
+            proj.style.top = "-30px";
             stage.appendChild(proj);
             
-            let curY = -20;
+            let curY = -30;
             let targetY = 35;
             
-            function animateProjectile() {
-                curY += 8;
+            function animateProj() {
+                curY += 1.8;
                 proj.style.transform = `translate3d(0, ${curY}px, 0)`;
                 if (curY < targetY) {
-                    requestAnimationFrame(animateProjectile);
+                    requestAnimationFrame(animateProj);
                 } else {
                     proj.remove();
-                    botEl.classList.remove("bot-vibrate");
                     executeShatterExplosion();
                 }
             }
-            requestAnimationFrame(animateProjectile);
+            requestAnimationFrame(animateProj);
         }
 
         function executeShatterExplosion() {
@@ -470,11 +541,12 @@
             
             botEl.style.opacity = "0";
             ballEl.style.display = "none";
+            crackSvg.innerHTML = "";
             
-            for (let i = 0; i < 45; i++) {
+            for (let i = 0; i < 55; i++) {
                 let shard = document.createElement("div");
                 shard.className = "bot-particle-shard";
-                shard.textContent = Math.random() > 0.5 ? "★" : "✦";
+                shard.textContent = Math.random() > 0.5 ? "⚡" : "✦";
                 shard.style.left = (botLeftRelative + Math.random() * botWidth) + "px";
                 shard.style.top = (botTopRelative + Math.random() * 25) + "px";
                 stage.appendChild(shard);
@@ -483,10 +555,10 @@
                     el: shard,
                     x: parseFloat(shard.style.left),
                     y: parseFloat(shard.style.top),
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.3) * 5,
+                    vx: (Math.random() - 0.5) * 4.5,
+                    vy: (Math.random() - 0.2) * 3.5,
                     alpha: 1.0,
-                    fade: 0.015 + Math.random() * 0.02
+                    fade: 0.008 + Math.random() * 0.01
                 });
             }
             
@@ -497,13 +569,9 @@
                 }
                 for (let i = shatterParticles.length - 1; i >= 0; i--) {
                     let p = shatterParticles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += 0.1;
-                    p.alpha -= p.fade;
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.alpha -= p.fade;
                     if (p.alpha <= 0) {
-                        p.el.remove();
-                        shatterParticles.splice(i, 1);
+                        p.el.remove(); shatterParticles.splice(i, 1);
                     } else {
                         p.el.style.transform = `translate3d(${p.x - parseFloat(p.el.style.left)}px, ${p.y - parseFloat(p.el.style.top)}px, 0)`;
                         p.el.style.opacity = p.alpha;
@@ -583,7 +651,7 @@
                 } else {
                     playerEl.textContent = getRandomLegend();
                 }
-                botEl.textContent = getRandomLegend();
+                botTextEl.textContent = getRandomLegend();
                 
                 setTimeout(() => {
                     playerWidth = playerEl.offsetWidth || 120;
@@ -822,7 +890,7 @@
             overlay.style.display = "none";
             stage.classList.remove("boss-mode");
             gameTitle.textContent = "sandpex — Легендарный Пинг-Понг";
-            document.body.style.background = "#ffffff";
+            document.body.style.setProperty("background", "#ffffff", "important");
             botEl.style.opacity = "1";
             ballEl.style.display = "flex";
             
@@ -830,11 +898,13 @@
             shatterParticles = [];
             
             clearHardcoreElements();
+            removeAsh();
             
             playerEl.textContent = getRandomLegend();
-            botEl.textContent = getRandomLegend();
+            botTextEl.textContent = getRandomLegend();
             botEl.style.filter = "none";
             botEl.className = "paddle bot-paddle";
+            crackSvg.innerHTML = "";
             
             setTimeout(() => {
                 playerWidth = playerEl.offsetWidth || 120;
