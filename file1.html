@@ -15,7 +15,6 @@
         
         #game-stage { width: 900px; height: 600px; border: 4px solid #000000; position: relative; background: #fafafa; overflow: hidden; display: block; transition: background 0.5s ease; }
         
-        /* Визуальные декорации ада на 250+ уровне */
         #game-stage.boss-mode {
             animation: borderNeon 5s linear infinite, bgGlitch 4s ease-in-out infinite alternate;
         }
@@ -32,20 +31,15 @@
             100% { background: #ebd5d5; }
         }
         
-        /* Платформы: убран CSS transition, чтобы убрать задержки и лаги за мышкой */
         .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; }
         .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); bottom: 30px; }
         .bot-paddle { color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); top: 30px; }
         
         #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; }
         
-        /* Стили для хаотичных черных ников обычных игроков (пепла) */
         .glitch-tag { position: absolute; font-weight: bold; font-size: 14px; color: #000000; border: 2px solid #000000; background: rgba(0, 0, 0, 0.08); padding: 4px 8px; border-radius: 3px; white-space: nowrap; pointer-events: none; z-index: 5; }
-        
-        /* Стили для вредоносных красных орборов */
         .red-orb { position: absolute; font-size: 22px; font-weight: 900; color: #ff003c; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none; z-index: 6; }
         
-        /* Предупреждающий мигающий баннер Are you ready? */
         #ready-banner { display: none; position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: 900; color: #ff003c; letter-spacing: 2px; animation: pulse 0.5s ease-in-out infinite alternate; z-index: 10; }
         @keyframes pulse { 0% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -53,6 +47,10 @@
         #score-player { color: #0056ff; }
         #score-divider { color: #000000; }
         #score-bot { color: #ff003c; }
+        
+        /* Стили секретной пиксельной консоли чит-кодов */
+        #cheat-console { display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 0 12px; width: 300px; height: 40px; border: 2px solid #000000; border-radius: 6px; font-size: 14px; outline: none; background: #ffffff; color: #000000; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); z-index: 99999; user-select: text !important; -webkit-user-select: text !important; text-align: center; }
+        #cheat-console::placeholder { color: #7f8c8d; font-size: 12px; }
         
         #screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
         #screen-overlay h2 { font-size: 28px; margin-bottom: 20px; }
@@ -66,6 +64,9 @@
 <body>
 
     <div id="game-stage">
+        <!-- Поле секретной консоли -->
+        <input type="text" id="cheat-console" placeholder="КОНСОЛЬ: ВВЕДИ КОД И НАЖМИ ENTER" autocomplete="off">
+        
         <div id="ready-banner">Are you ready?</div>
         <div id="scoreboard">
             <span id="score-player">0</span>
@@ -99,6 +100,7 @@
         const overlay = document.getElementById("screen-overlay");
         const curtain = document.getElementById("transition-curtain");
         const readyBanner = document.getElementById("ready-banner");
+        const cheatConsole = document.getElementById("cheat-console");
         
         let ballX = 440, ballY = 290, ballSpeedX = 4, ballSpeedY = 3;
         let playerX = 380, botX = 380;
@@ -109,6 +111,47 @@
 
         let obstacles = [];
         let redOrbs = [];
+
+        // Логика вызова секретной консоли по кнопке H с мгновенной паузой
+        window.addEventListener("keydown", e => {
+            if (e.key === "h" || e.key === "H" || e.key === "р" || e.key === "Р") {
+                if (document.activeElement !== cheatConsole) {
+                    e.preventDefault();
+                    if (cheatConsole.style.display === "block") {
+                        cheatConsole.style.display = "none";
+                        cheatConsole.blur();
+                        inPause = false; // Снимаем с паузы
+                    } else {
+                        inPause = true; // Ставим игру на паузу
+                        cheatConsole.style.display = "block";
+                        cheatConsole.focus();
+                    }
+                }
+            }
+        });
+
+        // Обработка чит-кодов в консоли по нажатию Enter
+        cheatConsole.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                const code = cheatConsole.value.trim().toLowerCase();
+                const validCodes =;
+                
+                validCodes.forEach(scoreValue => {
+                    if (code === scoreValue + "xtest") {
+                        playerScore = (scoreValue === 256) ? 255 : scoreValue;
+                        scorePlayerEl.textContent = playerScore;
+                        if (playerScore >= 250) stage.classList.add("boss-mode");
+                        else stage.classList.remove("boss-mode");
+                    }
+                });
+                
+                // Закрываем консоль и снимаем с паузы
+                cheatConsole.value = "";
+                cheatConsole.style.display = "none";
+                cheatConsole.blur();
+                inPause = false;
+            }
+        });
 
         async function initGame() {
             try {
@@ -371,7 +414,7 @@
                 if (ballSpeedY < 0) {
                     if (botCenter < ballCenter - 8) botX += botSpeed;
                     else if (botCenter > ballCenter + 8) botX -= botSpeed;
-                    botX = Math.max(0, Math.min(900 - botWidth, botX));
+                    box = Math.max(0, Math.min(900 - botWidth, botX));
                     botEl.style.left = botX + "px";
                 }
 
