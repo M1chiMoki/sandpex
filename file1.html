@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>sandpex — Легендарный Пинг-Понг</title>
+    <style>
+        @font-face {
+            font-family: 'Minecraftia';
+            src: url('https://cdnfonts.com') format('woff');
+            font-weight: normal; font-style: normal;
+        }
+        * { box-sizing: border-box; font-family: 'Minecraftia', sans-serif !important; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #ffffff; color: #000000; display: flex; justify-content: center; align-items: center; }
+        
+        #game-stage { width: 800px; height: 500px; border: 4px solid #000000; position: relative; background: #fafafa; overflow: hidden; display: block; }
+        
+        .paddle { position: absolute; font-weight: bold; font-size: 16px; white-space: nowrap; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: center; height: 35px; transition: top 0.05s linear; }
+        .player-paddle { color: #0056ff; border: 3px solid #0056ff; background: rgba(0, 86, 255, 0.1); left: 30px; }
+        .bot-paddle { color: #ff003c; border: 3px solid #ff003c; background: rgba(255, 0, 60, 0.1); right: 30px; }
+        
+        #ball { position: absolute; font-size: 24px; font-weight: 900; color: #000000; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+        
+        #scoreboard { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: bold; letter-spacing: 5px; }
+        #screen-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #000; }
+        #screen-overlay h2 { font-size: 28px; margin-bottom: 20px; }
+        .btn { background: #000; color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 6px; margin: 5px; transition: 0.2s; }
+        .btn:hover { background: #333; }
+        
+        #transition-curtain { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 999999; grid-template-columns: repeat(20, 1fr); grid-template-rows: repeat(20, 1fr); }
+        .black-block { background: #000; opacity: 0; transition: opacity 0.05s ease; }
+    </style>
+</head>
+<body>
+
+    <div id="game-stage">
+        <div id="scoreboard">0 : 0</div>
+        <div id="player" class="paddle player-paddle"></div>
+        <div id="bot" class="paddle bot-paddle"></div>
+        <div id="ball">O</div>
+        
+        <div id="screen-overlay">
+            <h2 id="overlay-title">Вы проиграли!</h2>
+            <button class="btn" id="retry-btn">Попробовать еще</button>
+            <button class="btn" id="back-btn">Назад</button>
+        </div>
+    </div>
+
+    <div id="transition-curtain"></div>
+
+    <script>
+        let legends = [];
+        let playerScore = 0, botScore = 0;
+        
+        const stage = document.getElementById("game-stage");
+        const playerEl = document.getElementById("player");
+        const botEl = document.getElementById("bot");
+        const ballEl = document.getElementById("ball");
+        const scoreboard = document.getElementById("scoreboard");
+        const overlay = document.getElementById("screen-overlay");
+        const curtain = document.getElementById("transition-curtain");
+        
+        let ballX = 390, ballY = 240, ballSpeedX = 4, ballSpeedY = 3;
+        let playerY = 210, botY = 210;
+        const paddleHeight = 35;
+        let playerWidth = 100, botWidth = 100;
+        let gameActive = false;
+
+        async function initGame() {
+            try {
+                const r = await fetch("players.json");
+                if (r.ok) {
+                    const all = await r.json();
+                    legends = all.filter(p => p.layer === 2 || p.description === "Легенда");
+                }
+            } catch(e) { console.log(e); }
+            
+            if (legends.length === 0) {
+                legends = [{ name: "Mendaly" }, { name: "SadFile" }, { name: "VOLONTER" }];
+            }
+            resetPositions();
+            gameActive = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function getRandomLegend() {
+            return legends[Math.floor(Math.random() * legends.length)].name;
+        }
+
+        function resetPositions() {
+            playerEl.textContent = getRandomLegend();
+            botEl.textContent = getRandomLegend();
+            
+            playerWidth = playerEl.offsetWidth;
+            botWidth = botEl.offsetWidth;
+
+            ballX = 390; ballY = 240;
+            ballSpeedX = (Math.random() > 0.5 ? 4 : -4);
+            ballSpeedY = (Math.random() * 4 - 2);
+            playerY = 215; botY = 215;
+            
+            playerEl.style.top = playerY + "px";
+            botEl.style.top = botY + "px";
+        }
+
+        stage.addEventListener("mousemove", e => {
+            const rect = stage.getBoundingClientRect();
+            let relativeY = e.clientY - rect.top - (paddleHeight / 2);
+            playerY = Math.max(0, Math.min(500 - paddleHeight, relativeY));
+            playerEl.style.top = playerY + "px";
+        });
+        function triggerEpicTransition() {
+            gameActive = false;
+            curtain.style.display = "grid";
+            curtain.innerHTML = "";
+            const totalBlocks = 400;
+            
+            for(let i = 0; i < totalBlocks; i++) {
+                let div = document.createElement("div");
+                div.className = "black-block";
+                curtain.appendChild(div);
+            }
+            
+            const blocks = Array.from(document.querySelectorAll(".black-block"));
+            blocks.sort(() => Math.random() - 0.5);
+            
+            blocks.forEach((block, index) => {
+                setTimeout(() => {
+                    block.style.opacity = "1";
+                    if (index === blocks.length - 1) {
+                        setTimeout(() => {
+                            window.location.href = "file2.html";
+                        }, 500);
+                    }
+                }, index * 3);
+            });
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            if (ballY <= 0 || ballY >= 480) ballSpeedY = -ballSpeedY;
+
+            let botCenter = botY + (paddleHeight / 2);
+            if (ballX > 400 && ballSpeedX > 0) {
+                if (botCenter < ballY - 5) botY += 2.8; 
+                else if (botCenter > ballY + 5) botY -= 2.8;
+                botY = Math.max(0, Math.min(500 - paddleHeight, botY));
+                botEl.style.top = botY + "px";
+            }
+
+            if (ballSpeedX < 0 && ballX <= 30 + playerWidth && ballX >= 30) {
+                if (ballY + 20 >= playerY && ballY <= playerY + paddleHeight) {
+                    ballSpeedX = -ballSpeedX * 1.05;
+                    let hitPoint = (ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2);
+                    ballSpeedY = hitPoint * 4;
+                    playerEl.textContent = getRandomLegend();
+                    setTimeout(() => { playerWidth = playerEl.offsetWidth; }, 0);
+                }
+            }
+
+            if (ballSpeedX > 0 && ballX >= 770 - botWidth && ballX <= 770) {
+                if (ballY + 20 >= botY && ballY <= botY + paddleHeight) {
+                    ballSpeedX = -ballSpeedX * 1.05;
+                    let hitPoint = (ballY - (botY + paddleHeight / 2)) / (paddleHeight / 2);
+                    ballSpeedY = hitPoint * 4;
+                    botEl.textContent = getRandomLegend();
+                    setTimeout(() => { botWidth = botEl.offsetWidth; }, 0);
+                }
+            }
+
+            if (ballX < 0) {
+                botScore++;
+                updateScore();
+            } else if (ballX > 800) {
+                playerScore++;
+                updateScore();
+            }
+
+            ballEl.style.left = ballX + "px";
+            ballEl.style.top = ballY + "px";
+
+            if (playerScore >= 256) {
+                triggerEpicTransition();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function updateScore() {
+            scoreboard.textContent = playerScore + " : " + botScore;
+            if (botScore > 5) {
+                gameActive = false;
+                document.getElementById("overlay-title").textContent = "Вы проиграли!";
+                overlay.style.display = "flex";
+            } else {
+                resetPositions();
+            }
+        }
+
+        document.getElementById("retry-btn").addEventListener("click", () => {
+            playerScore = 0; botScore = 0;
+            scoreboard.textContent = "0 : 0";
+            overlay.style.display = "none";
+            resetPositions();
+            gameActive = true;
+            requestAnimationFrame(gameLoop);
+        });
+
+        document.getElementById("back-btn").addEventListener("click", () => {
+            window.location.href = "index.html";
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
