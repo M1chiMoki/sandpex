@@ -187,7 +187,6 @@
         let attackButton = null;
         let attackHits = 0;
         let nextAttackSpawnTime = 0;
-        let isPadOverAttack = false;
         function runCountdown(callback) {
             inPause = true;
             countdownOverlay.style.display = "flex";
@@ -338,7 +337,6 @@
                 attackButton.el.remove();
                 attackButton = null;
             }
-            isPadOverAttack = false;
         }
 
         function spawnAttackButton() {
@@ -383,22 +381,6 @@
             let relativeX = e.clientX - rect.left - (playerWidth / 2);
             playerX = Math.max(0, Math.min(900 - playerWidth, relativeX));
             playerEl.style.left = playerX + "px";
-        });
-
-        window.addEventListener("click", e => {
-            if (!gameActive || inPause || playerScore !== 255 || !attackButton || !isPadOverAttack) return;
-            
-            attackHits++;
-            removeAttackButton();
-            nextAttackSpawnTime = Date.now() + (7000 + Math.random() * 23000);
-            
-            if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 2px #ff003c) blur(0.3px)";
-            else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) blur(0.6px)";
-            else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(1px)";
-            else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 10px #ff003c) contrast(2) invert(0.2) blur(1.5px)";
-            else if (attackHits >= 5) {
-                triggerVictorySequence();
-            }
         });
 
         function clearHardcoreElements() {
@@ -623,6 +605,18 @@
                                 attackButton.x + attackButton.w >= playerX && attackButton.x <= playerX + playerWidth) {
                                 isPadOverAttack = true;
                                 attackButton.el.style.background = "#27ae60";
+                                
+                                attackHits++;
+                                removeAttackButton();
+                                nextAttackSpawnTime = Date.now() + (7000 + Math.random() * 23000);
+                                
+                                if (attackHits === 1) botEl.style.filter = "drop-shadow(0 0 2px #ff003c) blur(0.3px)";
+                                else if (attackHits === 2) botEl.style.filter = "drop-shadow(0 0 4px #ff003c) blur(0.6px)";
+                                else if (attackHits === 3) botEl.style.filter = "drop-shadow(0 0 6px #ff003c) contrast(1.5) blur(1px)";
+                                else if (attackHits === 4) botEl.style.filter = "drop-shadow(0 0 10px #ff003c) contrast(2) invert(0.2) blur(1.5px)";
+                                else if (attackHits >= 5) {
+                                    triggerVictorySequence();
+                                }
                             } else {
                                 isPadOverAttack = false;
                                 attackButton.el.style.background = "#2ecc71";
