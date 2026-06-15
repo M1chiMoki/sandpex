@@ -28,13 +28,15 @@
         }
         @media(min-width: 480px) { #search-box { width: 250px; } }
         
-        #admin-btn, #save-btn { 
+        #admin-btn, #save-btn, #console-toggle-btn { 
             background: #000000; color: #ffffff; border: 2px solid #000000; padding: 0 16px; height: 40px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.2s; margin-left: 5px; display: inline-block; width: auto; line-height: 36px;
         }
-        @media(min-width: 480px) { #admin-btn, #save-btn { padding: 0 20px; font-size: 13px; margin-left: 10px; } }
-        #admin-btn:hover, #save-btn:hover { background: #222222; border-color: #222222; }
+        @media(min-width: 480px) { #admin-btn, #save-btn, #console-toggle-btn { padding: 0 20px; font-size: 13px; margin-left: 10px; } }
+        #admin-btn:hover, #save-btn:hover, #console-toggle-btn:hover { background: #222222; border-color: #222222; }
         #admin-btn.logged-in { background: #2ecc71; border-color: #2ecc71; color: white; cursor: default; }
         #save-btn { display: none; background: #2f80ed; border-color: #2f80ed; color: white; }
+        #console-toggle-btn { display: none; background: #9b59b6; border-color: #9b59b6; color: white; }
+        .admin-mode #console-toggle-btn { display: inline-block; }
         #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; cursor: grab; touch-action: none; background: transparent; }
         #viewport:active { cursor: grabbing; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -76,7 +78,6 @@
             83% { color: #4b0082; }
             100% { color: #ee82ee; }
         }
-        
         .focus-rect {
             position: absolute;
             border: 3px solid #ff0059;
@@ -116,11 +117,28 @@
         #mobile-add-btn { display: none; position: fixed; bottom: 65px; right: 20px; width: 56px; height: 56px; background: #000; color: #fff; border: none; border-radius: 50%; font-size: 28px; font-weight: bold; justify-content: center; align-items: center; cursor: pointer; z-index: 99999; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .admin-mode #mobile-add-btn { display: flex; }
         @media(min-width: 768px) { #mobile-add-btn { display: none !important; } }
+
+        #perm-console-window { display: none; position: fixed; top: 120px; left: 50px; width: 440px; height: 320px; background: #111111; border: 3px solid #000000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000000; flex-direction: column; border-radius: 6px; overflow: hidden; pointer-events: auto; }
+        .console-header { background: #000000; height: 36px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; border-bottom: 2px solid #222; cursor: move; color: #ffffff; font-weight: bold; font-size: 11px; letter-spacing: 0.5px; }
+        .console-close { cursor: pointer; font-size: 18px; color: #ff003c; font-weight: bold; font-family: monospace; transition: 0.2s; padding: 0 4px; }
+        .console-close:hover { color: #ffffff; }
+        .console-output { flex: 1; padding: 12px; background: #111111; color: #00ff66; font-size: 11px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border-bottom: 2px solid #222; font-family: monospace !important; }
+        .console-input-row { display: flex; height: 40px; background: #161616; align-items: center; padding: 0 8px; }
+        #console-cmd-input { flex: 1; height: 28px; background: #000000; border: 1px solid #333; color: #ffffff; outline: none; font-size: 11px; padding: 0 8px; border-radius: 4px; font-family: monospace !important; user-select: text !important; -webkit-user-select: text !important; }
+        #console-cmd-input:focus { border-color: #00ff66; }
+        #console-send-btn { width: 34px; height: 28px; background: #00ff66; border: none; color: #000000; font-weight: bold; font-size: 12px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-left: 6px; }
+        #console-send-btn:hover { background: #2ecc71; }
     </style>
 </head>
 <body>
     <div id="ui-container">
-        <div></div><input type="text" id="search-box" class="ui-element" placeholder="Найти ник..."><div class="ui-element"><button id="save-btn">Скачать файл карты</button><button id="admin-btn">Войти как Admin</button></div>
+        <div></div>
+        <input type="text" id="search-box" class="ui-element" placeholder="Найти ник...">
+        <div class="ui-element">
+            <button id="save-btn">Скачать файл карты</button>
+            <button id="console-toggle-btn">Консоль</button>
+            <button id="admin-btn">Войти как Admin</button>
+        </div>
     </div>
     <button id="mobile-add-btn">+</button>
     <div id="nav-tip">ЛКМ: Карта | Shift + Мышь: Выделение рамкой | Двойной клик: Создать ник</div>
@@ -130,7 +148,19 @@
             <div id="selection-box"></div>
         </div>
     </div>
-    
+
+    <div id="perm-console-window">
+        <div class="console-header" id="console-drag-handle">
+            <span>СИСТЕМНЫЙ ТЕРМИНАЛ РАЗРЕШЕНИЙ</span>
+            <span class="console-close" id="console-close-btn">×</span>
+        </div>
+        <div class="console-output" id="console-log-box"></div>
+        <div class="console-input-row">
+            <input type="text" id="console-cmd-input" placeholder="Введите команду..." autocomplete="off">
+            <button id="console-send-btn">➔</button>
+        </div>
+    </div>
+
     <div id="guide-h" class="guide-line"></div>
     <div id="guide-v" class="guide-line"></div>
     
@@ -141,6 +171,7 @@
         const canvas = document.getElementById("canvas");
         const adminBtn = document.getElementById("admin-btn");
         const saveBtn = document.getElementById("save-btn");
+        const consoleToggleBtn = document.getElementById("console-toggle-btn");
         const searchBox = document.getElementById("search-box");
         const infoModal = document.getElementById("info-modal");
         const modalBox = document.getElementById("modal-box");
@@ -149,6 +180,14 @@
         const mobileAddBtn = document.getElementById("mobile-add-btn");
         const selectionBox = document.getElementById("selection-box");
         const focusRectangle = document.getElementById("focus-rectangle");
+        
+        const permConsole = document.getElementById("perm-console-window");
+        const consoleCloseBtn = document.getElementById("console-close-btn");
+        const consoleLogBox = document.getElementById("console-log-box");
+        const consoleCmdInput = document.getElementById("console-cmd-input");
+        const consoleSendBtn = document.getElementById("console-send-btn");
+        const consoleDragHandle = document.getElementById("console-drag-handle");
+
         let isTargetAdmin = localStorage.getItem("sandpex_is_admin") === "true";
         let panX = window.innerWidth / 2, panY = window.innerHeight / 2, zoom = 1;
         let isPanning = false, startX, startY, players = [];
@@ -164,7 +203,139 @@
         
         let epsteinMode = false;
         let activeRainbowTimers = {};
-        
+        function getPermissions() {
+            try {
+                return JSON.parse(localStorage.getItem("user_permissions") || "[]");
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function savePermissions(perms) {
+            try {
+                localStorage.setItem("user_permissions", JSON.stringify(perms));
+            } catch(e) {}
+        }
+
+        function logToConsole(text, type = "info") {
+            const line = document.createElement("div");
+            if (type === "error") line.style.color = "#ff003c";
+            else if (type === "success") line.style.color = "#00ff66";
+            else line.style.color = "#ffffff";
+            line.textContent = `[SYSTEM] ${text}`;
+            consoleLogBox.appendChild(line);
+            consoleLogBox.scrollTop = consoleLogBox.scrollHeight;
+        }
+
+        function executeConsoleCommand() {
+            const raw = consoleCmdInput.value.trim();
+            if (!raw) return;
+            logToConsole(`> ${raw}`);
+            consoleCmdInput.value = "";
+
+            const parts = raw.split(/\s+/);
+            const baseCmd = parts[0].toLowerCase();
+
+            if (baseCmd === "perm") {
+                if (parts.length < 2) {
+                    logToConsole("Ошибка: Используйте perm add [название], perm remove [название] или perm list", "error");
+                    return;
+                }
+                const subAction = parts[1].toLowerCase();
+
+                if (subAction === "list") {
+                    const currentPerms = getPermissions();
+                    logToConsole(`Активные разрешения: ${currentPerms.length ? currentPerms.join(", ") : "нет"}`);
+                    return;
+                }
+
+                if (parts.length < 3) {
+                    logToConsole(`Ошибка: Не указано название разрешения для действия "${subAction}"`, "error");
+                    return;
+                }
+
+                const permName = parts.slice(2).join(" ").trim();
+                let currentPerms = getPermissions();
+
+                if (subAction === "add") {
+                    if (currentPerms.includes(permName)) {
+                        logToConsole(`Ошибка: Разрешение "${permName}" уже есть у пользователя!`, "error");
+                    } else {
+                        currentPerms.push(permName);
+                        savePermissions(currentPerms);
+                        logToConsole(`Разрешение "${permName}" успешно добавлено.`, "success");
+                    }
+                } else if (subAction === "remove") {
+                    if (!currentPerms.includes(permName)) {
+                        logToConsole(`Ошибка: Разрешения "${permName}" нет у пользователя!`, "error");
+                    } else {
+                        currentPerms = currentPerms.filter(p => p !== permName);
+                        savePermissions(currentPerms);
+                        logToConsole(`Разрешение "${permName}" успешно удалено.`, "success");
+                    }
+                } else {
+                    logToConsole(`Ошибка: Неизвестное поддействие "${subAction}". Допустимы: add, remove, list`, "error");
+                }
+            } else if (baseCmd === "clear") {
+                consoleLogBox.innerHTML = "";
+            } else if (baseCmd === "help") {
+                logToConsole("Доступные команды:");
+                logToConsole("  perm add [название] - добавить разрешение");
+                logToConsole("  perm remove [название] - удалить разрешение");
+                logToConsole("  perm list - показать список всех разрешений");
+                logToConsole("  clear - очистить лог терминала");
+            } else {
+                logToConsole(`Неизвестная команда: "${baseCmd}". Введите help для списка.`, "error");
+            }
+        }
+        if (consoleToggleBtn) {
+            consoleToggleBtn.addEventListener("click", () => {
+                permConsole.style.display = (permConsole.style.display === "flex") ? "none" : "flex";
+                if (permConsole.style.display === "flex") {
+                    consoleCmdInput.focus();
+                    const perms = getPermissions();
+                    consoleLogBox.innerHTML = "";
+                    logToConsole("Система управления правами запущена.");
+                    logToConsole(`Активные разрешения: ${perms.length ? perms.join(", ") : "нет"}`);
+                }
+            });
+        }
+
+        if (consoleCloseBtn) {
+            consoleCloseBtn.addEventListener("click", () => { permConsole.style.display = "none"; });
+        }
+
+        if (consoleSendBtn) {
+            consoleSendBtn.addEventListener("click", executeConsoleCommand);
+        }
+
+        if (consoleCmdInput) {
+            consoleCmdInput.addEventListener("keydown", e => {
+                if (e.key === "Enter") executeConsoleCommand();
+            });
+        }
+
+        let isConsoleDragging = false;
+        let consoleOffsetX = 0, consoleOffsetY = 0;
+
+        if (consoleDragHandle) {
+            consoleDragHandle.addEventListener("mousedown", e => {
+                if (e.target === consoleCloseBtn) return;
+                isConsoleDragging = true;
+                consoleOffsetX = e.clientX - permConsole.offsetLeft;
+                consoleOffsetY = e.clientY - permConsole.offsetTop;
+            });
+        }
+
+        window.addEventListener("mousemove", e => {
+            if (isConsoleDragging) {
+                permConsole.style.left = (e.clientX - consoleOffsetX) + "px";
+                permConsole.style.top = (e.clientY - consoleOffsetY) + "px";
+            }
+        });
+
+        window.addEventListener("mouseup", () => { isConsoleDragging = false; });
+
         window.addEventListener("keydown", e => { 
             if (e.key === "Control") isCtrlPressed = true; 
             if (e.key === "Shift") isShiftPressed = true;
@@ -176,8 +347,12 @@
         
         function updateTransform() { renderPlayers(); repositionFocusRectangle(); }
         
-        if (isTargetAdmin) { document.body.classList.add("admin-mode"); adminBtn.textContent = "Режим: Администратор"; adminBtn.classList.add("logged-in"); saveBtn.style.display = "inline-block"; }
-        
+        if (isTargetAdmin) { 
+            document.body.classList.add("admin-mode"); 
+            adminBtn.textContent = "Режим: Администратор"; 
+            adminBtn.classList.add("logged-in"); 
+            saveBtn.style.display = "inline-block"; 
+        }
         adminBtn.addEventListener("click", () => {
             if (isTargetAdmin) return;
             const p = prompt("Введите пароль администратора для sandpex:");
@@ -468,9 +643,7 @@
         let mokinasClickCount = 0, mokinasLastClickTime = 0;
         function renderPlayers(){
             const oldTags = canvas.querySelectorAll('.player-tag');
-            oldTags.forEach(t => {
-                if (t.id !== "focus-rectangle") t.remove();
-            });
+            oldTags.forEach(t => { if (t.id !== "focus-rectangle") t.remove(); });
 
             const q = searchBox.value.trim().toLowerCase();
 
@@ -484,33 +657,22 @@
                 if (selectedPlayerIds.has(p.id)) { t.classList.add("selected-tag"); }
 
                 if (q && !epsteinMode) {
-                    if (p.name.toLowerCase().startsWith(q)) {
-                        t.classList.add("highlighted-tag");
-                    } else {
-                        t.classList.add("dimmed-tag");
-                    }
+                    if (p.name.toLowerCase().startsWith(q)) { t.classList.add("highlighted-tag"); } 
+                    else { t.classList.add("dimmed-tag"); }
                 }
                 
                 const s = document.createElement("span"); 
-                if (epsteinMode) {
-                    s.textContent = "■".repeat(p.name.length);
-                } else {
-                    s.textContent = p.name;
-                }
+                if (epsteinMode) { s.textContent = "■".repeat(p.name.length); } 
+                else { s.textContent = p.name; }
                 t.appendChild(s);
                 
-                if (activeRainbowTimers[p.id]) {
-                    t.classList.add("rainbow-active");
-                }
+                if (activeRainbowTimers[p.id]) { t.classList.add("rainbow-active"); }
 
                 t.addEventListener("click", e => {
                     const now = Date.now();
-                    
                     if (p.name === "jeb_") {
                         if (now - jebLastClickTime > 3000) jebClickCount = 0;
-                        jebLastClickTime = now;
-                        jebClickCount++;
-                        
+                        jebLastClickTime = now; jebClickCount++;
                         if (jebClickCount === 3) {
                             jebClickCount = 0;
                             if (activeRainbowTimers[p.id]) clearTimeout(activeRainbowTimers[p.id]);
@@ -521,18 +683,14 @@
                             }, 10000);
                         }
                     }
-                    
                     if (p.name === "Mokinas48888") {
                         if (now - mokinasLastClickTime > 3000) mokinasClickCount = 0;
-                        mokinasLastClickTime = now;
-                        mokinasClickCount++;
-                        
+                        mokinasLastClickTime = now; mokinasClickCount++;
                         if (mokinasClickCount === 100) {
                             mokinasClickCount = 0;
                             window.location.href = "file1.html";
                         }
                     }
-                    
                     if (p.name === "AC/DC") {
                         window.open("https://youtu.be", "_blank");
                     }
