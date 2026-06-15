@@ -67,8 +67,8 @@
             <span id="score-divider">:</span>
             <span id="score-bot">0</span>
         </div>
-        <div id="player" class="paddle player-paddle">Mendaly</div>
-        <div id="bot" class="paddle bot-paddle">SadFile</div>
+        <div id="player" class="paddle player-paddle">Загрузка...</div>
+        <div id="bot" class="paddle bot-paddle">Загрузка...</div>
         <div id="ball">O</div>
     </div>
 
@@ -125,7 +125,7 @@
         });
         async function initGame() {
             try {
-                const r = await fetch("players.json");
+                const r = await fetch("players.json?t=" + Date.now(), { cache: "no-store" });
                 if (r.ok) {
                     const all = await r.json();
                     legends = all.filter(p => p.layer === 2 || p.description === "Легенда");
@@ -140,24 +140,30 @@
                 ordinaryPlayers = [{ name: "Mokinas48888" }, { name: "faret2" }, { name: "vladimat5" }];
             }
             
+            // Ставим случайные ники
             playerEl.textContent = getRandomLegend();
             botEl.textContent = getRandomLegend();
             
+            // Даем таймаут, чтобы шрифт применился и браузер выдал реальную ширину
             setTimeout(() => {
                 playerWidth = playerEl.offsetWidth || 120;
                 botWidth = botEl.offsetWidth || 120;
+                
                 resetPositions();
                 gameActive = true;
+                inPause = false;
                 requestAnimationFrame(gameLoop);
-            }, 100);
+            }, 150);
         }
 
         function getRandomLegend() {
-            return legends[Math.floor(Math.random() * legends.length)].name;
+            const randomIndex = Math.floor(Math.random() * legends.length);
+            return legends[randomIndex].name;
         }
 
         function getRandomOrdinary() {
-            return ordinaryPlayers[Math.floor(Math.random() * ordinaryPlayers.length)].name;
+            const randomIndex = Math.floor(Math.random() * ordinaryPlayers.length);
+            return ordinaryPlayers[randomIndex].name;
         }
 
         function resetPositions() {
@@ -312,6 +318,7 @@
         }
 
         function gameLoop() {
+            // Если игра не активна или база данных еще загружается — полностью пропускаем шаг физики
             if (!gameActive) return;
 
             if (!inPause) {
@@ -408,7 +415,6 @@
         }
 
         document.getElementById("retry-btn").addEventListener("click", () => {
-            // Исправлено: Сбрасываем счетчики в коде, чтобы не было вечного проигрыша
             playerScore = 0; 
             botScore = 0;
             scorePlayerEl.textContent = "0";
@@ -435,6 +441,7 @@
             window.location.href = "index.html";
         });
 
+        // Жесткий запуск только после полного построения DOM и загрузки базы
         initGame();
     </script>
 </body>
