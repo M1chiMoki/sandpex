@@ -203,6 +203,7 @@
         
         let epsteinMode = false;
         let activeRainbowTimers = {};
+        let systemLogs = [];
         function getPermissions() {
             try {
                 return JSON.parse(localStorage.getItem("user_permissions") || "[]");
@@ -221,10 +222,16 @@
             const line = document.createElement("div");
             if (type === "error") line.style.color = "#ff003c";
             else if (type === "success") line.style.color = "#00ff66";
+            else if (type === "event") line.style.color = "#3498db";
             else line.style.color = "#ffffff";
             line.textContent = `[SYSTEM] ${text}`;
             consoleLogBox.appendChild(line);
             consoleLogBox.scrollTop = consoleLogBox.scrollHeight;
+        }
+
+        function pushSystemLog(text, isError = false) {
+            const time = new Date().toLocaleTimeString();
+            systemLogs.push({ msg: `[${time}] ${text}`, err: isError });
         }
 
         function executeConsoleCommand() {
@@ -232,14 +239,15 @@
             if (!raw) return;
             logToConsole(`> ${raw}`);
             consoleCmdInput.value = "";
+            pushSystemLog(`Ввод команды: ${raw}`);
 
             const parts = raw.split(/\s+/);
             const baseCmd = parts[0].toLowerCase();
 
             if (baseCmd === "perm") {
                 if (parts.length < 2) {
-                    logToConsole("Ошибка: Используйте perm add [название], perm remove [название] или perm list", "error");
-                    return;
+                    const err = "Ошибка: Используйте perm add [название], perm remove [название] или perm list";
+                    logToConsole(err, "error"); pushSystemLog(err, true); return;
                 }
                 const subAction = parts[1].toLowerCase();
 
@@ -250,8 +258,8 @@
                 }
 
                 if (parts.length < 3) {
-                    logToConsole(`Ошибка: Не указано название разрешения для действия "${subAction}"`, "error");
-                    return;
+                    const err = `Ошибка: Не указано название разрешения для действия "${subAction}"`;
+                    logToConsole(err, "error"); pushSystemLog(err, true); return;
                 }
 
                 const permName = parts.slice(2).join(" ").trim();
@@ -259,22 +267,36 @@
 
                 if (subAction === "add") {
                     if (currentPerms.includes(permName)) {
-                        logToConsole(`Ошибка: Разрешение "${permName}" уже есть у пользователя!`, "error");
+                        const err = `Ошибка: Разрешение "${permName}" уже есть у пользователя!`;
+                        logToConsole(err, "error"); pushSystemLog(err, true);
                     } else {
                         currentPerms.push(permName);
                         savePermissions(currentPerms);
                         logToConsole(`Разрешение "${permName}" успешно добавлено.`, "success");
+                        pushSystemLog(`Выдано разрешение: ${permName}`);
                     }
                 } else if (subAction === "remove") {
                     if (!currentPerms.includes(permName)) {
-                        logToConsole(`Ошибка: Разрешения "${permName}" нет у пользователя!`, "error");
+                        const err = `Ошибка: Разрешения "${permName}" нет у пользователя!`;
+                        logToConsole(err, "error"); pushSystemLog(err, true);
                     } else {
                         currentPerms = currentPerms.filter(p => p !== permName);
                         savePermissions(currentPerms);
                         logToConsole(`Разрешение "${permName}" успешно удалено.`, "success");
+                        pushSystemLog(`Удалено разрешение: ${permName}`);
                     }
                 } else {
-                    logToConsole(`Ошибка: Неизвестное поддействие "${subAction}". Допустимы: add, remove, list`, "error");
+                    const err = `Ошибка: Неизвестное поддействие "${subAction}". Допустимы: add, remove, list`;
+                    logToConsole(err, "error"); pushSystemLog(err, true);
+                }
+            } else if (baseCmd === "logs") {
+                if (systemLogs.length === 0) {
+                    logToConsole("Логи пусты.", "info");
+                } else {
+                    logToConsole("--- ВЫВОД ВСЕХ СИСТЕМНЫХ ЛОГОВ ---", "info");
+                    systemLogs.forEach(l => {
+                        logToConsole(l.msg, l.err ? "error" : "event");
+                    });
                 }
             } else if (baseCmd === "clear") {
                 consoleLogBox.innerHTML = "";
@@ -283,9 +305,11 @@
                 logToConsole("  perm add [название] - добавить разрешение");
                 logToConsole("  perm remove [название] - удалить разрешение");
                 logToConsole("  perm list - показать список всех разрешений");
+                logToConsole("  logs - вывести всю историю активности и ошибок");
                 logToConsole("  clear - очистить лог терминала");
             } else {
-                logToConsole(`Неизвестная команда: "${baseCmd}". Введите help для списка.`, "error");
+                const err = `Неизвестная команда: "${baseCmd}". Введите help для списка.`;
+                logToConsole(err, "error"); pushSystemLog(err, true);
             }
         }
         if (consoleToggleBtn) {
@@ -297,12 +321,16 @@
                     consoleLogBox.innerHTML = "";
                     logToConsole("Система управления правами запущена.");
                     logToConsole(`Активные разрешения: ${perms.length ? perms.join(", ") : "нет"}`);
+                    pushSystemLog("Открытие терминала разрешений");
                 }
             });
         }
 
         if (consoleCloseBtn) {
-            consoleCloseBtn.addEventListener("click", () => { permConsole.style.display = "none"; });
+            consoleCloseBtn.addEventListener("click", () => { 
+                permConsole.style.display = "none"; 
+                pushSystemLog("Закрытие терминала разрешений");
+            });
         }
 
         if (consoleSendBtn) {
@@ -324,6 +352,7 @@
                 isConsoleDragging = true;
                 consoleOffsetX = e.clientX - permConsole.offsetLeft;
                 consoleOffsetY = e.clientY - permConsole.offsetTop;
+                pushSystemLog("Начало перемещения окна консоли");
             });
         }
 
@@ -334,7 +363,12 @@
             }
         });
 
-        window.addEventListener("mouseup", () => { isConsoleDragging = false; });
+        window.addEventListener("mouseup", () => { 
+            if (isConsoleDragging) {
+                isConsoleDragging = false; 
+                pushSystemLog("Конец перемещения окна консоли");
+            }
+        });
 
         window.addEventListener("keydown", e => { 
             if (e.key === "Control") isCtrlPressed = true; 
@@ -360,22 +394,40 @@
             const checkPass = p.trim().toLowerCase();
             if (checkPass === "пароль" || checkPass === "пароль администратора для sandpex") {
                 alert("Да ты шутник!");
+                pushSystemLog("Попытка ввода шуточного пароля администратора", true);
                 return;
             }
-            if (p === SECRET_KEY) { localStorage.setItem("sandpex_is_admin", "true"); alert("Доступ разрешен!"); window.location.reload(); }
-            else { alert("Неверный пароль!"); }
+            if (p === SECRET_KEY) { 
+                localStorage.setItem("sandpex_is_admin", "true"); 
+                alert("Доступ разрешен!"); 
+                pushSystemLog("Успешная авторизация администратора");
+                window.location.reload(); 
+            }
+            else { 
+                alert("Неверный пароль!"); 
+                pushSystemLog(`Неудачная попытка входа с паролем: ${p}`, true);
+            }
         });
         async function loadPlayersFromServer(){
             try{
                 const r = await fetch("players.json?t=" + Date.now(), { cache: "no-store" });
-                if (r.ok) { players = await r.json(); renderPlayers(); }
-            } catch (e) { console.log("Ошибка чтения файла базы."); }
+                if (r.ok) { 
+                    players = await r.json(); 
+                    renderPlayers(); 
+                    pushSystemLog("База данных игроков успешно загружена с сервера");
+                }
+            } catch (e) { 
+                console.log("Ошибка чтения файла базы."); 
+                pushSystemLog("Критическая ошибка при загрузке базы данных", true);
+            }
         }
         saveBtn.addEventListener("click", () => {
             if (!isTargetAdmin) return;
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(players, null, 2));
             const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "players.json");
-            document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); alert("Файл 'players.json' успешно скачан! Загрузите его на GitHub.");
+            document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); 
+            alert("Файл 'players.json' успешно скачан! Загрузите его на GitHub.");
+            pushSystemLog("Администратор скачал файл базы данных players.json");
         });
 
         searchBox.addEventListener("input", () => {
@@ -384,11 +436,13 @@
             
             if (q === "найти ник") {
                 alert("чё самый умный?");
+                pushSystemLog("Пользователь ввёл фразу-заглушку в поиск ников", true);
                 searchBox.value = "";
                 return;
             }
             if (q === "minecraft") {
                 alert("Это наша история");
+                pushSystemLog("Активирована пасхалка 'minecraft' в поиске");
                 searchBox.value = "";
                 return;
             }
@@ -397,9 +451,11 @@
                 focusedPlayerId = null;
                 focusRectangle.style.display = "none";
                 renderPlayers();
+                pushSystemLog("Активирован скрытый режим 'epsteinMode'");
                 return;
             } else if (epsteinMode && !q) {
                 epsteinMode = false;
+                pushSystemLog("Отключение режима 'epsteinMode'");
             }
             
             if (!q) {
@@ -422,6 +478,7 @@
                 panX = window.innerWidth / 2 - exactMatch.x * zoom;
                 panY = window.innerHeight / 2 - exactMatch.y * zoom;
                 updateTransform();
+                pushSystemLog(`Поиск обнаружил точное совпадение для игрока: ${exactMatch.name}`);
             } else {
                 focusedPlayerId = null;
                 focusRectangle.style.display = "none";
@@ -463,10 +520,15 @@
         function createNewPlayer(clientX, clientY) {
             if (!isTargetAdmin) return;
             const n = prompt("Введите ник игрока:"); if (!n) return;
-            if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { alert("Этот ник уже есть на карте!"); return; }
+            if (players.some(p => p.name.toLowerCase() === n.trim().toLowerCase())) { 
+                alert("Этот ник уже есть на карте!"); 
+                pushSystemLog(`Попытка создать дубликат ника: ${n}`, true);
+                return; 
+            }
             const targetX = (clientX - panX) / zoom;
             const targetY = (clientY - panY) / zoom;
             players.push({ id: Date.now(), name: n, x: targetX, y: targetY, color: "#000000", description: "", pinned: false, scale: 1, layer: 1, hidden: false });
+            pushSystemLog(`Создан новый ник: ${n} на координатах X:${Math.round(targetX)} Y:${Math.round(targetY)}`);
             renderPlayers();
         }
 
@@ -485,6 +547,7 @@
                 selectionBox.style.display = "block";
                 if (!isCtrlPressed) selectedPlayerIds.clear();
                 e.preventDefault();
+                pushSystemLog("Начало выделения области рамкой (Shift + ЛКМ)");
                 return;
             }
             if (e.target === viewport) {
@@ -494,6 +557,7 @@
                 }, 1500);
             }
             isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY;
+            pushSystemLog(`Захват карты мыши для перетаскивания: X:${e.clientX} Y:${e.clientY}`);
         });
         window.addEventListener("mousemove", e => { 
             clearTimeout(mapHoldTimer);
@@ -530,15 +594,21 @@
                 renderPlayers();
                 return;
             }
-            if (isPanning && !dragActive) { panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); } 
+            if (isPanning && !dragActive) { 
+                panX = e.clientX - startX; panY = e.clientY - startY; updateTransform(); 
+            } 
         });
 
         window.addEventListener("mouseup", () => { 
             clearTimeout(mapHoldTimer); 
-            isPanning = false; 
+            if (isPanning) {
+                isPanning = false;
+                pushSystemLog("Карта перемещена пользователем");
+            }
             if (isSelecting) {
                 isSelecting = false;
                 selectionBox.style.display = "none";
+                pushSystemLog(`Завершено групповое выделение. Выбрано ников: ${selectedPlayerIds.size}`);
             }
         });
         viewport.addEventListener("dblclick", e => {
@@ -557,6 +627,7 @@
                 isPanning = false;
                 touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 touchStartZoom = zoom;
+                pushSystemLog("Начало мобильного масштабирования (Pinch Zoom)");
             }
         });
         window.addEventListener("touchmove", e => {
@@ -573,7 +644,12 @@
                 updateTransform();
             }
         });
-        window.addEventListener("touchend", () => { isPanning = false; });
+        window.addEventListener("touchend", () => { 
+            if (isPanning) {
+                isPanning = false;
+                pushSystemLog("Тач-перемещение завершено");
+            }
+        });
 
         window.addEventListener("wheel", e => {
             const oldZoom = zoom; const f = 1.1;
@@ -614,33 +690,36 @@
 
             modalBox.innerHTML += "<button id='close-modal-btn' style='background:#7f8c8d;'>Закрыть</button>";
             infoModal.style.display = "flex";
+            pushSystemLog(`Открыто контекстное меню игрока: ${p.name}`);
 
             document.getElementById('close-modal-btn').addEventListener('click', () => infoModal.style.display = "none");
             
             if (isTargetAdmin) {
                 document.getElementById('edit-desc-btn').addEventListener('click', () => {
                     const newDesc = prompt("Введите описание для " + p.name + ":", p.description || "");
-                    if (newDesc !== null) { p.description = newDesc; renderPlayers(); infoModal.style.display = "none"; }
+                    if (newDesc !== null) { p.description = newDesc; renderPlayers(); infoModal.style.display = "none"; pushSystemLog(`Изменено описание для ${p.name}`); }
                 });
                 document.getElementById('edit-color-btn').addEventListener('click', () => {
                     const newColor = prompt("Введите цвет для " + p.name + ":", p.color || "#000000");
-                    if (newColor !== null) { p.color = newColor.trim() ? newColor.trim().toLowerCase() : "#000000"; renderPlayers(); infoModal.style.display = "none"; }
+                    if (newColor !== null) { p.color = newColor.trim() ? newColor.trim().toLowerCase() : "#000000"; renderPlayers(); infoModal.style.display = "none"; pushSystemLog(`Изменен цвет для ${p.name} на ${p.color}`); }
                 });
                 document.getElementById('edit-scale-btn').addEventListener('click', () => {
                     const newScale = prompt("Масштаб текста (например: 1, 1.5, 0.5):", p.scale || 1);
-                    if (newScale !== null && !isNaN(newScale) && Number(newScale) > 0) { p.scale = Number(newScale); renderPlayers(); infoModal.style.display = "none"; }
+                    if (newScale !== null && !isNaN(newScale) && Number(newScale) > 0) { p.scale = Number(newScale); renderPlayers(); infoModal.style.display = "none"; pushSystemLog(`Изменен масштаб для ${p.name} на ${p.scale}`); }
                 });
                 document.getElementById('edit-layer-btn').addEventListener('click', () => {
                     const newLayer = prompt("Введите номер слоя (целое число, например: 1, 2, 0):", p.layer !== undefined ? p.layer : 1);
-                    if (newLayer !== null && !isNaN(newLayer)) { p.layer = parseInt(newLayer, 10); renderPlayers(); infoModal.style.display = "none"; }
+                    if (newLayer !== null && !isNaN(newLayer)) { p.layer = parseInt(newLayer, 10); renderPlayers(); infoModal.style.display = "none"; pushSystemLog(`Изменен слой для ${p.name} на ${p.layer}`); }
                 });
-                document.getElementById('toggle-hide-btn').addEventListener('click', () => { p.hidden = !p.hidden; renderPlayers(); infoModal.style.display = "none"; });
-                document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; });
+                document.getElementById('toggle-hide-btn').addEventListener('click', () => { p.hidden = !p.hidden; renderPlayers(); infoModal.style.display = "none"; pushSystemLog(`Переключена видимость для ${p.name}. Скрыт: ${p.hidden}`); });
+                document.getElementById('toggle-pin-btn').addEventListener('click', () => { p.pinned = !p.pinned; renderPlayers(); infoModal.style.display = "none"; pushSystemLog(`Переключен пин для ${p.name}. Закреплен: ${p.pinned}`); });
             }
         }
 
         let jebClickCount = 0, jebLastClickTime = 0;
         let mokinasClickCount = 0, mokinasLastClickTime = 0;
+        let tcClickCount = 0, tcLastClickTime = 0;
+
         function renderPlayers(){
             const oldTags = canvas.querySelectorAll('.player-tag');
             oldTags.forEach(t => { if (t.id !== "focus-rectangle") t.remove(); });
@@ -670,6 +749,7 @@
 
                 t.addEventListener("click", e => {
                     const now = Date.now();
+                    pushSystemLog(`Клик по нику игрока: ${p.name}`);
                     if (p.name === "jeb_") {
                         if (now - jebLastClickTime > 3000) jebClickCount = 0;
                         jebLastClickTime = now; jebClickCount++;
@@ -681,6 +761,7 @@
                                 t.classList.remove("rainbow-active");
                                 delete activeRainbowTimers[p.id];
                             }, 10000);
+                            pushSystemLog("Активирована радужная пасхалка 'jeb_'");
                         }
                     }
                     if (p.name === "Mokinas48888") {
@@ -688,11 +769,22 @@
                         mokinasLastClickTime = now; mokinasClickCount++;
                         if (mokinasClickCount === 100) {
                             mokinasClickCount = 0;
+                            pushSystemLog("Секретный переход: 100 кликов по Mokinas48888 -> file1.html");
                             window.location.href = "file1.html";
+                        }
+                    }
+                    if (p.name.toLowerCase() === "topcaper") {
+                        if (now - tcLastClickTime > 3000) tcClickCount = 0;
+                        tcLastClickTime = now; tcClickCount++;
+                        if (tcClickCount === 10) {
+                            tcClickCount = 0;
+                            pushSystemLog("Секретный переход: 10 кликов по topcaper -> file2.html");
+                            window.location.href = "file2.html";
                         }
                     }
                     if (p.name === "AC/DC") {
                         window.open("https://youtu.be", "_blank");
+                        pushSystemLog("Активирована пасхалка AC/DC: открыт YouTube");
                     }
                 });
                 const d = document.createElement("span"); d.className = "player-delete-btn"; d.textContent = "  ×"; t.appendChild(d);
@@ -732,7 +824,12 @@
                 t.addEventListener("touchend", () => clearTimeout(touchTimer));
                 t.addEventListener("touchmove", () => clearTimeout(touchTimer));
 
-                d.addEventListener("click", e => { e.stopPropagation(); players = players.filter(pl => pl.id !== p.id); renderPlayers(); });
+                d.addEventListener("click", e => { 
+                    e.stopPropagation(); 
+                    pushSystemLog(`Ник удален с карты: ${p.name}`);
+                    players = players.filter(pl => pl.id !== p.id); 
+                    renderPlayers(); 
+                });
                 
                 if (isTargetAdmin && !p.pinned) {
                     const onStart = () => {
@@ -740,6 +837,7 @@
                         dragActive = true;
                         dragPlayerId = p.id;
                         dragElement = t;
+                        pushSystemLog(`Начало перетаскивания ника: ${p.name}`);
                     };
                     t.addEventListener("mousedown", e => { if (e.button === 0 && e.target !== d) { e.stopPropagation(); onStart(); } });
                     t.addEventListener("touchstart", e => { if (e.touches.length === 1 && e.target !== d) { e.stopPropagation(); onStart(); } });
@@ -826,6 +924,8 @@
 
         const stopDrag = () => {
             if (dragActive) {
+                const p = players.find(pl => pl.id === dragPlayerId);
+                if (p) pushSystemLog(`Ник перемещен на новую позицию X:${Math.round(p.x)} Y:${Math.round(p.y)}`);
                 dragActive = false; dragPlayerId = null; dragElement = null;
                 guideH.style.display = "none"; guideV.style.display = "none";
             }
