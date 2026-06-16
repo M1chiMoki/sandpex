@@ -36,7 +36,6 @@
         .level-card { width: 400px; height: 280px; border: 4px solid #000000; border-radius: 12px; background: #fafafa; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
         .level-card h3 { font-size: 22px; margin-bottom: 12px; text-transform: uppercase; }
         .level-card p { font-size: 12px; color: #555555; margin-bottom: 25px; }
-        
         #editor-screen { background: #ffffff; flex-direction: row; align-items: stretch; padding: 0; }
         #editor-canvas { background: #fafafa; cursor: crosshair; }
         .editor-sidebar { width: 220px; border-left: 4px solid #000000; display: flex; flex-direction: column; background: #ffffff; padding: 15px; justify-content: space-between; }
@@ -72,6 +71,17 @@
         .toggle-switch.active::after { left: 22px; background: #ffffff; }
     </style>
 </head>
+<body>
+
+    <div id="gd-game-stage">
+        <div class="screen" id="main-menu-screen">
+            <div class="menu-title">Geometry Dash</div>
+            <div class="menu-buttons-container">
+                <button class="main-btn" id="editor-btn-left">Редактор</button>
+                <button class="main-btn" id="play-btn-center">Играть</button>
+                <button class="main-btn" id="dev-btn-right">✕</button>
+            </div>
+        </div>
         <div class="screen" id="play-screen">
             <div id="editor-top-bar" style="top:20px; left:20px;">
                 <button class="top-bar-btn" id="exit-selector-btn">◀ Меню</button>
@@ -156,7 +166,6 @@
             <button class="btn" id="game-exit-btn" style="width:200px; background:#e74c3c; border-color:#e74c3c;">Выйти</button>
         </div>
     </div>
-
     <script>
         const BLOCK_SIZE = 30;
         const FPS = 60;
@@ -195,11 +204,11 @@
                 let saved = localStorage.getItem("gd_custom_levels");
                 if (saved) localLevels = JSON.parse(saved);
             } catch(e) { console.log(e); }
-            
             if (localLevels.length === 0) {
                 localLevels = [];
             }
         }
+
         const menuScreen = document.getElementById("main-menu-screen");
         const playScreen = document.getElementById("play-screen");
         const editorScreen = document.getElementById("editor-screen");
@@ -212,7 +221,6 @@
             menuScreen.style.display = "none";
             playScreen.style.display = "none";
             editorScreen.style.display = "none";
-            
             if (screenName === "main-menu") {
                 menuScreen.style.display = "flex";
             } else if (screenName === "play") {
@@ -262,14 +270,12 @@
             editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
             editorCtx.strokeStyle = "rgba(0,0,0,0.06)";
             editorCtx.lineWidth = 1;
-            
             for (let x = 0; x < editorCanvas.width; x += BLOCK_SIZE) {
                 editorCtx.beginPath(); editorCtx.moveTo(x, 0); editorCtx.lineTo(x, editorCanvas.height); editorCtx.stroke();
             }
             for (let y = 0; y < editorCanvas.height; y += BLOCK_SIZE) {
                 editorCtx.beginPath(); editorCtx.moveTo(0, y); editorCtx.lineTo(editorCanvas.width, y); editorCtx.stroke();
             }
-            
             editorCtx.strokeStyle = "#000000";
             editorCtx.lineWidth = 3;
             editorCtx.beginPath(); editorCtx.moveTo(0, 480); editorCtx.lineTo(editorCanvas.width, 480); editorCtx.stroke();
@@ -282,12 +288,11 @@
                 }
             });
         }
-
         function drawObjectOnCanvas(ctx, obj) {
             let col = obj.color || "#000000";
             ctx.save();
             if (obj.type === 1 || obj.type === 2) {
-                ctx.shadowColor = col;
+                ctx.shadowColor = col === "#000000" ? "#3498db" : col;
                 ctx.shadowBlur = 10;
             }
             ctx.fillStyle = col;
@@ -323,10 +328,8 @@
             const rect = editorCanvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
-            
             const cellX = Math.floor(mouseX / BLOCK_SIZE) * BLOCK_SIZE;
             const cellY = Math.floor(mouseY / BLOCK_SIZE) * BLOCK_SIZE;
-
             let existingIndex = editorObjects.findIndex(o => o.x === cellX && o.y === cellY);
 
             if (activeTab === "build") {
@@ -340,10 +343,9 @@
             }
             drawEditor();
         });
+
         document.getElementById("act-copy").addEventListener("click", () => {
-            if (selectedObjectForEdit) {
-                clipboardObject = { ...selectedObjectForEdit };
-            }
+            if (selectedObjectForEdit) clipboardObject = { ...selectedObjectForEdit };
         });
 
         document.getElementById("act-paste").addEventListener("click", () => {
@@ -460,8 +462,6 @@
             player.y += player.vy;
 
             let onSolid = false;
-            let groundY = (player.gravitySign === 1) ? 456 : 0;
-            
             if (player.gravitySign === 1 && player.y >= 456) {
                 player.y = 456; player.vy = 0; onSolid = true;
             } else if (player.gravitySign === -1 && player.y <= 0) {
@@ -573,7 +573,6 @@
                 let p = particles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.fade;
                 if (p.alpha <= 0) particles.splice(i, 1);
             }
-
             renderGameGraphics();
         }
 
@@ -582,12 +581,8 @@
         }
         function renderGameGraphics() {
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-            
-            gameCtx.save();
-            gameCtx.translate(-cameraX, 0);
-
-            gameCtx.strokeStyle = "rgba(0,0,0,0.04)";
-            gameCtx.lineWidth = 1;
+            gameCtx.save(); gameCtx.translate(-cameraX, 0);
+            gameCtx.strokeStyle = "rgba(0,0,0,0.04)"; gameCtx.lineWidth = 1;
             let startGridX = Math.floor(cameraX / BLOCK_SIZE) * BLOCK_SIZE;
             for (let x = startGridX; x < startGridX + gameCanvas.width + BLOCK_SIZE; x += BLOCK_SIZE) {
                 gameCtx.beginPath(); gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke();
@@ -595,62 +590,35 @@
             for (let y = 0; y < gameCanvas.height; y += BLOCK_SIZE) {
                 gameCtx.beginPath(); gameCtx.moveTo(cameraX, y); gameCtx.lineTo(cameraX + gameCanvas.width, y); gameCtx.stroke();
             }
-
-            gameCtx.strokeStyle = "#000000";
-            gameCtx.lineWidth = 3;
+            gameCtx.strokeStyle = "#000000"; gameCtx.lineWidth = 3;
             gameCtx.beginPath(); gameCtx.moveTo(cameraX, 480); gameCtx.lineTo(cameraX + gameCanvas.width, 480); gameCtx.stroke();
 
-            gameObjects.forEach(obj => {
-                drawObjectOnCanvas(gameCtx, obj);
-            });
+            gameObjects.forEach(obj => { drawObjectOnCanvas(gameCtx, obj); });
 
             particles.forEach(p => {
-                gameCtx.save();
-                gameCtx.globalAlpha = p.alpha;
-                gameCtx.fillStyle = p.color;
-                gameCtx.beginPath();
-                gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                gameCtx.fill();
-                gameCtx.restore();
+                gameCtx.save(); gameCtx.globalAlpha = p.alpha; gameCtx.fillStyle = p.color;
+                gameCtx.beginPath(); gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); gameCtx.fill(); gameCtx.restore();
             });
 
             gameCtx.save();
             gameCtx.translate(player.x + player.width / 2, player.y + player.height / 2);
             gameCtx.rotate((player.rotation * Math.PI) / 180);
-            if (player.gravitySign === -1) {
-                gameCtx.scale(1, -1);
-            }
+            if (player.gravitySign === -1) gameCtx.scale(1, -1);
             
             if (player.mode === "ship") {
-                gameCtx.fillStyle = "#000000";
-                gameCtx.beginPath();
-                gameCtx.moveTo(-14, -6);
-                gameCtx.lineTo(14, 0);
-                gameCtx.lineTo(-14, 8);
-                gameCtx.closePath();
-                gameCtx.fill();
-                gameCtx.strokeStyle = "#ffffff";
-                gameCtx.lineWidth = 1.5;
-                gameCtx.stroke();
+                gameCtx.fillStyle = "#000000"; gameCtx.beginPath();
+                gameCtx.moveTo(-14, -6); gameCtx.lineTo(14, 0); gameCtx.lineTo(-14, 8); gameCtx.closePath(); gameCtx.fill();
+                gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 1.5; gameCtx.stroke();
             } else {
-                gameCtx.fillStyle = "#000000";
-                gameCtx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
-                gameCtx.strokeStyle = "#ffffff";
-                gameCtx.lineWidth = 2;
-                gameCtx.strokeRect(-player.width / 2 + 3, -player.height / 2 + 3, player.width - 6, player.height - 6);
+                gameCtx.fillStyle = "#000000"; gameCtx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+                gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 2; gameCtx.strokeRect(-player.width / 2 + 3, -player.height / 2 + 3, player.width - 6, player.height - 6);
             }
-            gameCtx.restore();
-
-            gameCtx.restore();
+            gameCtx.restore(); gameCtx.restore();
         }
 
         function handlePlayerDeath() {
-            player.x = 50;
-            player.y = player.gravitySign === 1 ? 456 : 0;
-            player.vy = 0;
-            player.rotation = 0;
-            player.isGrounded = true;
-            player.isRotating = false;
+            player.x = 50; player.y = player.gravitySign === 1 ? 456 : 0;
+            player.vy = 0; player.rotation = 0; player.isGrounded = true; player.isRotating = false;
         }
 
         function stopActualGame() {
@@ -665,17 +633,10 @@
         document.getElementById("play-btn-center").addEventListener("click", () => switchScreen("play"));
         document.getElementById("dev-btn-right").addEventListener("click", () => alert("Пока еще в разработке..."));
         document.getElementById("exit-selector-btn").addEventListener("click", () => switchScreen("main-menu"));
-        
-        document.getElementById("editor-exit-btn").addEventListener("click", () => {
-            stopActualGame();
-            switchScreen("main-menu");
-        });
+        document.getElementById("editor-exit-btn").addEventListener("click", () => { stopActualGame(); switchScreen("main-menu"); });
 
         document.getElementById("editor-test-btn").addEventListener("click", () => {
-            if (editorObjects.length === 0) {
-                alert("Сначала постройте что-нибудь!");
-                return;
-            }
+            if (editorObjects.length === 0) { alert("Сначала постройте что-нибудь!"); return; }
             startActualGame(editorObjects);
         });
 
@@ -684,17 +645,12 @@
             if (!lvlName) return;
             let exportData = { id: localLevels.length + 1, name: lvlName, creator: "Admin", objects: editorObjects };
             localLevels.push(exportData);
-            try {
-                localStorage.setItem("gd_custom_levels", JSON.stringify(localLevels));
-            } catch(e) { console.error(e); }
+            try { localStorage.setItem("gd_custom_levels", JSON.stringify(localLevels)); } catch(e) { console.error(e); }
             
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
             const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", "level.json");
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
+            downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "level.json");
+            document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
             alert("Файл уровня скачан! Вы можете закинуть его в папку geometryd.");
         });
 
@@ -712,18 +668,14 @@
             toggleGod.className = isGodMode ? "toggle-switch active" : "toggle-switch";
         });
 
-        document.getElementById("editor-resume-btn").addEventListener("click", () => {
-            pauseOverlay.style.display = "none";
-        });
-
+        document.getElementById("editor-resume-btn").addEventListener("click", () => { pauseOverlay.style.display = "none"; });
         document.getElementById("game-resume-btn").addEventListener("click", () => {
             document.getElementById("game-pause-overlay").style.display = "none";
             gameLoopId = setInterval(gameUpdateLoop, FRAME_TIME);
         });
 
         document.getElementById("game-exit-btn").addEventListener("click", () => {
-            document.getElementById("game-pause-overlay").style.display = "none";
-            stopActualGame();
+            document.getElementById("game-pause-overlay").style.display = "none"; stopActualGame();
         });
 
         const tabs = ["build", "edit", "delete"];
