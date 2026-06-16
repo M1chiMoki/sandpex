@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Geometry Dash — Ultimate Scale Engine</title>
+    <title>Geometry Dash — 240FPS Ultimate Scale Engine</title>
     <style>
         @font-face {
             font-family: 'Minecraftia';
@@ -19,7 +19,7 @@
         #main-menu-screen { display: flex; background: #ffffff; }
         
         .menu-title { font-size: 54px; font-weight: bold; margin-bottom: 60px; letter-spacing: 4px; text-transform: uppercase; text-shadow: 3px 3px 0px rgba(0,0,0,0.1); }
-        .menu-buttons-container { display: flex; align-items: center; gap: 50px; }
+        .menu-buttons-container { display: flex; align-items: center; gap: 50px; position: relative; }
         
         .main-btn { background: #000000; color: #ffffff; border: 4px solid #000000; font-weight: bold; cursor: pointer; transition: 0.2s ease; display: flex; align-items: center; justify-content: center; text-align: center; }
         .main-btn:hover { background: #ffffff; color: #000000; }
@@ -28,6 +28,8 @@
         #editor-btn-left, #dev-btn-right { width: 140px; height: 140px; border-radius: 16px; font-size: 16px; text-transform: uppercase; }
         #dev-btn-right { background: #ffffff; color: #000000; }
         #dev-btn-right:hover { background: #000000; color: #ffffff; }
+        
+        #profile-btn-bottom-left { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 50px; font-size: 14px; text-transform: uppercase; z-index: 10; }
         #play-screen { background: #ffffff; }
         .level-selector-row { display: flex; align-items: center; justify-content: center; gap: 60px; width: 100%; height: 100%; position: relative; }
         .nav-arrow { width: 80px; height: 80px; border: 4px solid #000000; background: #ffffff; font-size: 32px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 12px; transition: 0.15s; z-index: 10; }
@@ -58,9 +60,9 @@
         .top-bar-btn { height: 50px; padding: 0 25px; font-size: 16px; font-weight: bold; border: 3px solid #000000; background: #ffffff; cursor: pointer; border-radius: 8px; text-transform: uppercase; display: flex; align-items: center; }
         .top-bar-btn:hover { background: #000000; color: #ffffff; }
         
-        #editor-pause-overlay, #game-pause-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.96); z-index: 200; flex-direction: column; justify-content: center; align-items: center; border: 5px solid #000000; }
-        #editor-pause-overlay h2, #game-pause-overlay h2 { font-size: 36px; margin-bottom: 30px; text-transform: uppercase; }
-        .pause-box { border: 4px solid #000000; background: #fafafa; padding: 30px; border-radius: 12px; width: 450px; margin-bottom: 30px; }
+        #editor-pause-overlay, #game-pause-overlay, #profile-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.96); z-index: 200; flex-direction: column; justify-content: center; align-items: center; border: 5px solid #000000; }
+        #editor-pause-overlay h2, #game-pause-overlay h2, #profile-overlay h2 { font-size: 36px; margin-bottom: 30px; text-transform: uppercase; }
+        .pause-box { border: 4px solid #000000; background: #fafafa; padding: 30px; border-radius: 12px; width: 500px; margin-bottom: 30px; }
         .pause-stat-line { display: flex; justify-content: space-between; font-size: 18px; margin-bottom: 12px; }
         
         .toggle-container { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; border-top: 2px dashed #000; padding-top: 15px; }
@@ -76,11 +78,17 @@
         .scale-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #000000; border: 1px solid #ffffff; border-radius: 50%; cursor: pointer; }
         
         .hex-input-box { width: 100%; height: 36px; background: #ffffff; border: 2px solid #000000; border-radius: 4px; padding: 0 8px; font-size: 14px; font-weight: bold; outline: none; margin-top: 8px; }
+        
+        .target-toggle-row { display: flex; gap: 6px; margin-top: 10px; }
+        .target-btn { flex: 1; padding: 6px; font-size: 11px; border: 2px solid #000000; background: #ffffff; cursor: pointer; border-radius: 4px; text-transform: uppercase; text-align: center; font-weight: bold; }
+        .target-btn.active { background: #000000; color: #ffffff; }
     </style>
 </head>
 <body>
 
     <div id="gd-game-stage">
+        <button class="main-btn" id="profile-btn-bottom-left" style="position:absolute; bottom:30px; left:30px; width:140px; height:50px; font-size:14px; text-transform:uppercase; z-index:1000;">Профиль</button>
+
         <div class="screen" id="main-menu-screen">
             <div class="menu-title">Geometry Dash</div>
             <div class="menu-buttons-container">
@@ -119,9 +127,10 @@
                         <button class="tab-btn" id="tab-delete">Delete</button>
                     </div>
                     
-                    <div class="editor-panel-box" id="panel-build" style="max-height: 500px; overflow-y: auto;">
+                    <div class="editor-panel-box" id="panel-build" style="max-height: 480px; overflow-y: auto;">
                         <div class="palette-grid">
                             <button class="palette-item active" data-type="1"><span>⬜</span>Блок</button>
+                            <button class="palette-item" data-type="15"><span>▅</span>П.Блок</button>
                             <button class="palette-item" data-type="2"><span>▲</span>Шип</button>
                             <button class="palette-item" data-type="3"><span>⚙</span>Пила</button>
                             <button class="palette-item" data-type="4"><span>▬</span>Ж.Пад</button>
@@ -133,6 +142,7 @@
                             <button class="palette-item" data-type="10"><span>⧉</span>Р.Порт</button>
                             <button class="palette-item" data-type="11"><span>⧉</span>З.Порт</button>
                             <button class="palette-item" data-type="12"><span>⧉</span>В.Порт</button>
+                            <button class="palette-item" data-type="16"><span>🄿</span>D Блок</button>
                             <button class="palette-item" data-type="13"><span>🚩</span>S.Pos</button>
                             <button class="palette-item" data-type="14"><span>🏁</span>End</button>
                         </div>
@@ -143,12 +153,23 @@
                             <button class="action-btn" id="act-copy">Copy</button>
                             <button class="action-btn" id="act-paste">Paste</button>
                             <button class="action-btn" id="act-copypaste" style="font-size:12px;">Copy+Paste</button>
-                            <button class="action-btn" id="act-edit-obj" style="background:#e67e22; color:#fff; border-color:#e67e22;">Edit Obj</button>
+                            <button class="action-btn" id="act-kill-toggle" style="background:#2ecc71; color:#fff; border-color:#2ecc71;">Kill: ON</button>
+                        </div>
+                        
+                        <div class="target-toggle-row">
+                            <button class="target-btn active" id="target-outline">Outline</button>
+                            <button class="target-btn" id="target-inside">Inside</button>
                         </div>
                         <input type="text" id="hex-color-input" class="hex-input-box" placeholder="#000000" maxlength="7">
+                        
                         <div class="scale-slider-container">
                             <span class="scale-slider-label">Scale: <span id="scale-slider-val">1.0</span></span>
                             <input type="range" id="obj-scale-slider" class="scale-slider" min="0.5" max="3" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="scale-slider-container" style="margin-top:10px;">
+                            <span class="scale-slider-label">Opacity: <span id="opacity-slider-val">100%</span></span>
+                            <input type="range" id="obj-opacity-slider" class="scale-slider" min="0" max="1" step="0.1" value="1">
                         </div>
                     </div>
 
@@ -162,6 +183,28 @@
                     <div style="font-size:12px; color:#333; line-height:1.4; margin-top:6px;">SHIFT + Мышь: Рамка<br>CTRL + Мышь: Без сетки</div>
                 </div>
             </div>
+        </div>
+        <div id="profile-overlay">
+            <h2>Профиль Игрока</h2>
+            <div class="pause-box">
+                <div style="margin-bottom:15px;">
+                    <label class="scale-slider-label">Цвет Иконки (Обводка) HEX:</label>
+                    <input type="text" id="prof-out-color" class="hex-input-box" value="#ffffff" maxlength="7">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label class="scale-slider-label">Цвет Иконки (Внутри) HEX:</label>
+                    <input type="text" id="prof-in-color" class="hex-input-box" value="#000000" maxlength="7">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label class="scale-slider-label">Цвет Вспышек / Эффектов HEX:</label>
+                    <input type="text" id="prof-fx-color" class="hex-input-box" value="#f1c40f" maxlength="7">
+                </div>
+                <div>
+                    <label class="scale-slider-label">Цвет Шлейфа Волны HEX:</label>
+                    <input type="text" id="prof-trail-color" class="hex-input-box" value="#3498db" maxlength="7">
+                </div>
+            </div>
+            <button class="btn" id="profile-close-btn" style="width:250px; font-size:16px; padding:12px;">Сохранить</button>
         </div>
 
         <div id="editor-pause-overlay">
@@ -187,9 +230,10 @@
             <button class="btn" id="game-exit-btn" style="width:250px; background:#e74c3c; border-color:#e74c3c; font-size:16px; padding:12px;">Выйти</button>
         </div>
     </div>
+
     <script>
         const BLOCK_SIZE = 30;
-        const FPS = 60;
+        const FPS = 240;
         const FRAME_TIME = 1000 / FPS;
 
         let currentScreen = "main-menu";
@@ -203,12 +247,21 @@
         let selectedBlockType = 1;
         let selectedObjectForEdit = null;
         let clipboardObject = null;
+        let editTargetLayer = "outline";
         
         let gameActive = false;
         let gameObjects = [];
         let particles = [];
+        let waveTrail = [];
         let padCooldown = false;
         let brushMode = "single";
+        
+        let profileSettings = {
+            outline: "#ffffff",
+            inside: "#000000",
+            fx: "#f1c40f",
+            trail: "#3498db"
+        };
         
         let editorScrollX = 0;
         let editorScrollY = 0;
@@ -230,26 +283,31 @@
         let isDraggingGroup = false;
 
         let player = { 
-            x: 50, y: 690, vx: 6.5, vy: 0, rotation: 0, width: 30, height: 30, 
+            x: 50, y: 690, vx: 1.625, vy: 0, rotation: 0, width: 30, height: 30, 
             isGrounded: false, jumpHold: false, isRotating: false, rotTarget: 0,
-            gravitySign: 1, mode: "cube" 
+            gravitySign: 1, mode: "cube", isSliding: false
         };
         let cameraX = 0;
         
-        let GRAVITY = 1.6;
-        const JUMP_IMPULSE = -16.5;
-        const MAX_FALL_SPEED = 22;
+        let GRAVITY = 0.101;
+        const JUMP_IMPULSE = -4.125;
+        const MAX_FALL_SPEED = 5.5;
 
-        const legendsColors = ["#e74c3c", "#9b59b6", "#3498db", "#e67e22", "#1abc9c", "#f1c40f", "#2ecc71"];
-
+        const legendsColors = ["#ffffff", "#000000", "#e74c3c", "#9b59b6", "#3498db", "#e67e22", "#1abc9c", "#f1c40f", "#2ecc71"];
         function initData() {
             try {
                 let saved = localStorage.getItem("gd_custom_levels");
                 if (saved) localLevels = JSON.parse(saved);
+                let savedProf = localStorage.getItem("gd_player_profile");
+                if (savedProf) profileSettings = JSON.parse(savedProf);
             } catch(e) { console.log(e); }
             if (localLevels.length === 0) {
                 localLevels = [];
             }
+            document.getElementById("prof-out-color").value = profileSettings.outline;
+            document.getElementById("prof-in-color").value = profileSettings.inside;
+            document.getElementById("prof-fx-color").value = profileSettings.fx;
+            document.getElementById("prof-trail-color").value = profileSettings.trail;
         }
 
         const menuScreen = document.getElementById("main-menu-screen");
@@ -291,6 +349,7 @@
                 startActualGame(lvl.objects);
             });
         }
+
         document.getElementById("prev-lvl-btn").addEventListener("click", () => {
             if (localLevels.length === 0) return;
             if (currentLevelIdx > 0) { currentLevelIdx--; renderLevelCard(); }
@@ -330,12 +389,12 @@
             editorCtx.beginPath(); editorCtx.moveTo(-editorScrollX, 720); editorCtx.lineTo(-editorScrollX + editorCanvas.width, 720); editorCtx.stroke();
 
             editorObjects.forEach(obj => {
-                drawObjectOnCanvas(editorCtx, obj);
+                drawObjectOnCanvas(editorCtx, obj, true);
                 let sizeMult = obj.scale || 1;
                 if ((activeTab === "edit" && selectedObjectForEdit === obj) || selectedObjectsGroup.includes(obj)) {
                     editorCtx.strokeStyle = "#ff003c"; editorCtx.lineWidth = 3;
                     let w = obj.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE;
-                    let h = (obj.type >= 8 && obj.type <= 12) ? BLOCK_SIZE * 3 : (obj.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE);
+                    let h = (obj.type >= 8 && obj.type <= 12) ? BLOCK_SIZE * 3 : (obj.type === 15 ? BLOCK_SIZE / 2 : (obj.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE));
                     editorCtx.strokeRect(obj.x, obj.y, w * sizeMult, h * sizeMult);
                 }
             });
@@ -349,44 +408,87 @@
             }
             editorCtx.restore();
         }
-
-        function drawObjectOnCanvas(ctx, obj) {
-            let col = obj.color || "#000000";
-            let s = obj.scale || 1;
+        function drawObjectOnCanvas(ctx, canvasObj, isEditorMode) {
+            let outlineCol = canvasObj.color || "#ffffff";
+            let insideCol = canvasObj.fillColor || "#000000";
+            let scaleVal = canvasObj.scale || 1;
+            let opacityVal = canvasObj.opacity !== undefined ? canvasObj.opacity : 1;
+            
             ctx.save();
-            ctx.translate(obj.x, obj.y);
-            ctx.scale(s, s);
-            ctx.fillStyle = col;
+            ctx.globalAlpha = opacityVal;
+            ctx.translate(canvasObj.x, canvasObj.y);
+            ctx.scale(scaleVal, scaleVal);
 
-            if (obj.type === 1) {
-                ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
-            } else if (obj.type === 2) {
-                ctx.beginPath(); ctx.moveTo(0, BLOCK_SIZE); ctx.lineTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE, BLOCK_SIZE); ctx.closePath(); ctx.fill();
-            } else if (obj.type === 3) {
-                ctx.beginPath(); ctx.arc(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE - 2, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE / 2, 0, Math.PI * 2); ctx.stroke();
-            } else if (obj.type === 4) {
+            if (canvasObj.type === 1) {
+                ctx.fillStyle = insideCol; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = outlineCol; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
+            } else if (canvasObj.type === 15) {
+                ctx.fillStyle = insideCol; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE / 2);
+                ctx.strokeStyle = outlineCol; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE / 2);
+            } else if (canvasObj.type === 2) {
+                ctx.beginPath(); ctx.moveTo(0, BLOCK_SIZE); ctx.lineTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE, BLOCK_SIZE); ctx.closePath();
+                ctx.fillStyle = insideCol; ctx.fill(); ctx.strokeStyle = outlineCol; ctx.lineWidth = 3; ctx.stroke();
+            } else if (canvasObj.type === 3) {
+                ctx.save();
+                ctx.translate(BLOCK_SIZE, BLOCK_SIZE);
+                if (!isEditorMode && gameActive) {
+                    ctx.rotate((Date.now() % 1000) / 1000 * Math.PI * 2);
+                }
+                ctx.beginPath();
+                for (let i = 0; i < 16; i++) {
+                    let angle = (i / 16) * Math.PI * 2;
+                    let r = (i % 2 === 0) ? BLOCK_SIZE - 2 : BLOCK_SIZE - 8;
+                    ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                }
+                ctx.closePath();
+                ctx.fillStyle = insideCol; ctx.fill();
+                ctx.strokeStyle = outlineCol; ctx.lineWidth = 3; ctx.stroke();
+                
+                ctx.strokeStyle = outlineCol; ctx.lineWidth = 1.5;
+                for (let i = 0; i < 8; i++) {
+                    let angle = (i / 8) * Math.PI * 2;
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(angle) * (BLOCK_SIZE - 8), Math.sin(angle) * (BLOCK_SIZE - 8)); ctx.stroke();
+                }
+                ctx.beginPath(); ctx.arc(0, 0, BLOCK_SIZE / 3, 0, Math.PI * 2);
+                ctx.fillStyle = insideCol; ctx.fill(); ctx.stroke();
+                ctx.restore();
+            } else if (canvasObj.type === 4) {
                 ctx.fillStyle = "#f1c40f"; ctx.fillRect(0, BLOCK_SIZE - 6, BLOCK_SIZE, 6);
-            } else if (obj.type === 5) {
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.strokeRect(0, BLOCK_SIZE - 6, BLOCK_SIZE, 6);
+            } else if (canvasObj.type === 5) {
                 ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.arc(BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 3, 0, Math.PI * 2); ctx.fill();
-            } else if (obj.type === 6) {
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+            } else if (canvasObj.type === 6) {
                 ctx.fillStyle = "#3498db"; ctx.fillRect(0, BLOCK_SIZE - 6, BLOCK_SIZE, 6);
-            } else if (obj.type === 7) {
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.strokeRect(0, BLOCK_SIZE - 6, BLOCK_SIZE, 6);
+            } else if (canvasObj.type === 7) {
                 ctx.fillStyle = "#3498db"; ctx.beginPath(); ctx.arc(BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 3, 0, Math.PI * 2); ctx.fill();
-            } else if (obj.type === 8) {
-                ctx.fillStyle = "#f1c40f"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
-            } else if (obj.type === 9) {
-                ctx.fillStyle = "#3498db"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
-            } else if (obj.type === 10) {
-                ctx.fillStyle = "#ff6b81"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
-            } else if (obj.type === 11) {
-                ctx.fillStyle = "#2ecc71"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
-            } else if (obj.type === 12) {
-                ctx.fillStyle = "#9b59b6"; ctx.beginPath(); ctx.moveTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE, BLOCK_SIZE * 1.5); ctx.lineTo(BLOCK_SIZE / 2, BLOCK_SIZE * 3); ctx.lineTo(0, BLOCK_SIZE * 1.5); ctx.closePath(); ctx.fill();
-            } else if (obj.type === 13) {
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+            } else if (canvasObj.type === 8) {
+                ctx.fillStyle = "rgba(241, 196, 15, 0.3)"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+            } else if (canvasObj.type === 9) {
+                ctx.fillStyle = "rgba(52, 152, 219, 0.3)"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.strokeStyle = "#3498db"; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+            } else if (canvasObj.type === 10) {
+                ctx.fillStyle = "rgba(255, 107, 129, 0.3)"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.strokeStyle = "#ff6b81"; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+            } else if (canvasObj.type === 11) {
+                ctx.fillStyle = "rgba(46, 204, 113, 0.3)"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.strokeStyle = "#2ecc71"; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+            } else if (canvasObj.type === 12) {
+                ctx.fillStyle = "rgba(155, 89, 182, 0.3)";
+                ctx.beginPath(); ctx.moveTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE, BLOCK_SIZE * 1.5); ctx.lineTo(BLOCK_SIZE / 2, BLOCK_SIZE * 3); ctx.lineTo(0, BLOCK_SIZE * 1.5); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = "#9b59b6"; ctx.lineWidth = 3; ctx.stroke();
+            } else if (canvasObj.type === 16) {
+                if (isEditorMode) {
+                    ctx.strokeStyle = "#34495e"; ctx.lineWidth = 2; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
+                    ctx.fillStyle = "#34495e"; ctx.font = "14px Arial"; ctx.fillText("D", 10, BLOCK_SIZE - 8);
+                }
+            } else if (canvasObj.type === 13) {
                 ctx.strokeStyle = "#e67e22"; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
                 ctx.fillStyle = "#e67e22"; ctx.font = "10px Arial"; ctx.fillText("START", 2, BLOCK_SIZE - 10);
-            } else if (obj.type === 14) {
+            } else if (canvasObj.type === 14) {
                 ctx.strokeStyle = "#ff003c"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE / 2, BLOCK_SIZE); ctx.stroke();
                 ctx.fillStyle = "#ff003c"; ctx.font = "10px Arial"; ctx.fillText("FINISH", 4, BLOCK_SIZE - 10);
             }
@@ -413,7 +515,7 @@
                     } else {
                         let existingIndex = editorObjects.indexOf(clickedObj);
                         editorObjects.splice(existingIndex, 1);
-                        editorObjects.push({ type: selectedBlockType, x: cellX, y: cellY, color: "#000000", scale: 1 });
+                        editorObjects.push({ type: selectedBlockType, x: cellX, y: cellY, color: "#ffffff", fillColor: "#000000", scale: 1, opacity: 1, kill: true });
                         drawEditor();
                     }
                 } else if (brushMode === "more") {
@@ -428,7 +530,12 @@
                     selectionCurrentX = selectionStartX;
                     selectionCurrentY = selectionStartY;
                 } else {
-                    let clickedObj = editorObjects.find(o => mouseX >= o.x && mouseX <= o.x + BLOCK_SIZE && mouseY >= o.y && mouseY <= o.y + BLOCK_SIZE);
+                    let clickedObj = editorObjects.find(o => {
+                        let w = o.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE;
+                        let h = (o.type >= 8 && o.type <= 12) ? BLOCK_SIZE * 3 : (o.type === 15 ? BLOCK_SIZE / 2 : (o.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE));
+                        let s = o.scale || 1;
+                        return mouseX >= o.x && mouseX <= o.x + w * s && mouseY >= o.y && mouseY <= o.y + h * s;
+                    });
                     if (clickedObj) {
                         if (selectedObjectsGroup.includes(clickedObj)) {
                             isDraggingGroup = true;
@@ -436,9 +543,20 @@
                             selectedObjectForEdit = clickedObj;
                             selectedObjectsGroup = [clickedObj];
                             isDraggingGroup = true;
-                            document.getElementById("hex-color-input").value = clickedObj.color || "#000000";
+                            
+                            let curCol = editTargetLayer === "outline" ? (clickedObj.color || "#ffffff") : (clickedObj.fillColor || "#000000");
+                            document.getElementById("hex-color-input").value = curCol;
                             document.getElementById("obj-scale-slider").value = clickedObj.scale || 1;
-                            document.getElementById("scale-slider-val").textContent = clickedObj.scale || 1;
+                            document.getElementById("scale-slider-val").textContent = (clickedObj.scale || 1).toFixed(1);
+                            document.getElementById("obj-opacity-slider").value = clickedObj.opacity !== undefined ? clickedObj.opacity : 1;
+                            document.getElementById("opacity-slider-val").textContent = Math.round((clickedObj.opacity !== undefined ? clickedObj.opacity : 1) * 100) + "%";
+                            
+                            let kBtn = document.getElementById("act-kill-toggle");
+                            if (clickedObj.kill !== false) {
+                                kBtn.textContent = "Kill: ON"; kBtn.style.background = "#2ecc71"; kBtn.style.borderColor = "#2ecc71";
+                            } else {
+                                kBtn.textContent = "Kill: OFF"; kBtn.style.background = "#e74c3c"; kBtn.style.borderColor = "#e74c3c";
+                            }
                         }
                     } else {
                         selectedObjectForEdit = null;
@@ -447,7 +565,12 @@
                     drawEditor();
                 }
             } else if (activeTab === "delete") {
-                let existingIndex = editorObjects.findIndex(o => mouseX >= o.x && mouseX <= o.x + BLOCK_SIZE && mouseY >= o.y && mouseY <= o.y + BLOCK_SIZE);
+                let existingIndex = editorObjects.findIndex(o => {
+                    let w = o.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE;
+                    let h = (o.type >= 8 && o.type <= 12) ? BLOCK_SIZE * 3 : (o.type === 15 ? BLOCK_SIZE / 2 : (o.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE));
+                    let s = o.scale || 1;
+                    return mouseX >= o.x && mouseX <= o.x + w * s && mouseY >= o.y && mouseY <= o.y + h * s;
+                });
                 if (existingIndex !== -1) {
                     editorObjects.splice(existingIndex, 1);
                     drawEditor();
@@ -494,16 +617,13 @@
         });
 
         window.addEventListener("mouseup", () => {
-            isEditorPanning = false;
-            isMoreBuilding = false;
-            isSelectionBoxActive = false;
-            isDraggingGroup = false;
+            isEditorPanning = false; isMoreBuilding = false; isSelectionBoxActive = false; isDraggingGroup = false;
         });
 
         function buildAtPosition(cx, cy) {
             let exist = editorObjects.some(o => o.x === cx && o.y === cy);
             if (!exist) {
-                editorObjects.push({ type: selectedBlockType, x: cx, y: cy, color: "#000000", scale: 1 });
+                editorObjects.push({ type: selectedBlockType, x: cx, y: cy, color: "#ffffff", fillColor: "#000000", scale: 1, opacity: 1, kill: true });
                 drawEditor();
             }
         }
@@ -516,10 +636,31 @@
             selectedObjectsGroup = editorObjects.filter(o => o.x >= x1 && o.x <= x2 && o.y >= y1 && o.y <= y2);
             if (selectedObjectsGroup.length === 1) selectedObjectForEdit = selectedObjectsGroup[0];
         }
+        document.getElementById("target-outline").addEventListener("click", () => {
+            editTargetLayer = "outline";
+            document.getElementById("target-outline").classList.add("active");
+            document.getElementById("target-inside").classList.remove("active");
+            if (selectedObjectForEdit) {
+                document.getElementById("hex-color-input").value = selectedObjectForEdit.color || "#ffffff";
+            }
+        });
+
+        document.getElementById("target-inside").addEventListener("click", () => {
+            editTargetLayer = "inside";
+            document.getElementById("target-inside").classList.add("active");
+            document.getElementById("target-outline").classList.remove("active");
+            if (selectedObjectForEdit) {
+                document.getElementById("hex-color-input").value = selectedObjectForEdit.fillColor || "#000000";
+            }
+        });
+
         document.getElementById("hex-color-input").addEventListener("input", e => {
             let val = e.target.value;
             if (/^#[0-9A-F]{6}$/i.test(val)) {
-                selectedObjectsGroup.forEach(obj => obj.color = val);
+                selectedObjectsGroup.forEach(obj => {
+                    if (editTargetLayer === "outline") obj.color = val;
+                    else obj.fillColor = val;
+                });
                 drawEditor();
             }
         });
@@ -531,6 +672,31 @@
             sSliderVal.textContent = val.toFixed(1);
             selectedObjectsGroup.forEach(obj => obj.scale = val);
             drawEditor();
+        });
+
+        const oSlider = document.getElementById("obj-opacity-slider");
+        const oSliderVal = document.getElementById("opacity-slider-val");
+        oSlider.addEventListener("input", e => {
+            let val = parseFloat(e.target.value);
+            oSliderVal.textContent = Math.round(val * 100) + "%";
+            selectedObjectsGroup.forEach(obj => obj.opacity = val);
+            drawEditor();
+        });
+
+        document.getElementById("act-kill-toggle").addEventListener("click", () => {
+            if (selectedObjectsGroup.length > 0) {
+                let currentKill = selectedObjectsGroup[0].kill !== false;
+                let nextKill = !currentKill;
+                selectedObjectsGroup.forEach(obj => obj.kill = nextKill);
+                
+                let kBtn = document.getElementById("act-kill-toggle");
+                if (nextKill) {
+                    kBtn.textContent = "Kill: ON"; kBtn.style.background = "#2ecc71"; kBtn.style.borderColor = "#2ecc71";
+                } else {
+                    kBtn.textContent = "Kill: OFF"; kBtn.style.background = "#e74c3c"; kBtn.style.borderColor = "#e74c3c";
+                }
+                drawEditor();
+            }
         });
 
         window.addEventListener("keydown", e => {
@@ -562,7 +728,6 @@
                 drawEditor();
             }
         });
-
         let gameCanvas = null;
         let gameCtx = null;
         let gameLoopId = null;
@@ -581,6 +746,7 @@
             gameActive = true;
             gameObjects = JSON.parse(JSON.stringify(lvlObjects));
             particles = [];
+            waveTrail = [];
             
             if (!gameCanvas) {
                 gameCanvas = document.createElement("canvas");
@@ -609,9 +775,9 @@
             player = { 
                 x: startPos ? startPos.x : 50, 
                 y: startPos ? startPos.y : 690, 
-                vx: 6.5, vy: 0, rotation: 0, width: 30, height: 30, 
+                vx: 1.625, vy: 0, rotation: 0, width: 30, height: 30, 
                 isGrounded: true, jumpHold: player.jumpHold || false, isRotating: false, rotTarget: 0,
-                gravitySign: 1, mode: "cube" 
+                gravitySign: 1, mode: "cube", isSliding: false
             };
         }
 
@@ -630,25 +796,32 @@
                 player.jumpHold = false;
             }
         }
+
         function gameUpdateLoop() {
             player.x += player.vx;
             
             if (player.mode === "wave") {
-                player.vy = player.jumpHold ? -player.vx * player.gravitySign : player.vx * player.gravitySign;
-                player.isRotating = false;
-                player.rotation = player.jumpHold ? -45 * player.gravitySign : 45 * player.gravitySign;
+                if (player.isSliding) {
+                    player.vy = 0;
+                    player.rotation = 0;
+                } else {
+                    player.vy = player.jumpHold ? -player.vx * player.gravitySign : player.vx * player.gravitySign;
+                    player.rotation = player.jumpHold ? -45 * player.gravitySign : 45 * player.gravitySign;
+                }
+                waveTrail.push({ x: player.x + player.width - 1.3, y: player.y + player.height / 2 });
+                if (waveTrail.length > 800) waveTrail.shift();
             } else if (player.mode === "ship") {
-                let thrust = player.jumpHold ? -0.42 * player.gravitySign : 0.42 * player.gravitySign;
+                let thrust = player.jumpHold ? -0.105 * player.gravitySign : 0.105 * player.gravitySign;
                 player.vy += thrust;
-                let cap = 7;
+                let cap = 1.75;
                 if (player.vy > cap) player.vy = cap;
                 if (player.vy < -cap) player.vy = -cap;
                 
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.3) {
                     particles.push({
                         type: "smoke", x: player.x, y: player.y + player.height / 2 + (Math.random() - 0.5) * 8,
-                        vx: -3 - Math.random() * 3, vy: (Math.random() - 0.5) * 1.5,
-                        size: 4 + Math.random() * 5, alpha: 0.8, fade: 0.02 + Math.random() * 0.02, color: "#95a5a6"
+                        vx: -1 - Math.random() * 1, vy: (Math.random() - 0.5) * 0.4,
+                        size: 4 + Math.random() * 5, alpha: 0.8, fade: 0.015 + Math.random() * 0.015, color: "#95a5a6"
                     });
                 }
             } else {
@@ -657,15 +830,25 @@
                 if (player.gravitySign === -1 && player.vy < -MAX_FALL_SPEED) player.vy = -MAX_FALL_SPEED;
             }
             
-            player.y += player.vy;
-
-            let onSolid = false;
-            if (player.gravitySign === 1 && player.y >= 690) {
-                player.y = 690; player.vy = 0; onSolid = true;
-            } else if (player.gravitySign === -1 && player.y <= 0) {
-                player.y = 0; player.vy = 0; onSolid = true;
+            if (player.mode !== "wave") {
+                player.y += player.vy;
+            } else {
+                player.y += player.vy;
             }
 
+            let onSolid = false;
+            let currentCeiling = 0;
+            let currentFloor = 690;
+            
+            if (player.gravitySign === 1 && player.y >= currentFloor) {
+                player.y = currentFloor; player.vy = 0; onSolid = true;
+                if (player.mode === "wave") player.isSliding = true;
+            } else if (player.gravitySign === -1 && player.y <= currentCeiling) {
+                player.y = currentCeiling; player.vy = 0; onSolid = true;
+                if (player.mode === "wave") player.isSliding = true;
+            } else {
+                if (player.mode === "wave") player.isSliding = false;
+            }
             let playerSolidBox = { x: player.x, y: player.y, w: player.width, h: player.height };
             if (player.mode === "ship") {
                 playerSolidBox = { x: player.x + 16, y: player.y + 7, w: 28, h: 15 };
@@ -673,28 +856,63 @@
                 playerSolidBox = { x: player.x + player.width - 2.6, y: player.y + player.height / 2 - 1.3, w: 2.6, h: 2.6 };
             }
 
+            let hasDBloakActive = false;
+
             for (let i = 0; i < gameObjects.length; i++) {
                 let obj = gameObjects[i];
+                if (obj.kill === false) continue;
                 let s = obj.scale || 1;
-                if (obj.type === 1) {
+
+                if (obj.type === 16) {
+                    let dBox = { x: obj.x - 2, y: obj.y - 2, w: BLOCK_SIZE * s + 4, h: BLOCK_SIZE * s + 4 };
+                    if (checkAABB(playerSolidBox, dBox)) {
+                        hasDBloakActive = true;
+                    }
+                }
+            }
+
+            for (let i = 0; i < gameObjects.length; i++) {
+                let obj = gameObjects[i];
+                if (obj.kill === false) continue;
+                let s = obj.scale || 1;
+                
+                if (obj.type === 1 || obj.type === 15) {
                     let bW = BLOCK_SIZE * s;
-                    let bH = BLOCK_SIZE * s;
+                    let bH = (obj.type === 15 ? BLOCK_SIZE / 2 : BLOCK_SIZE) * s;
+                    
                     if (playerSolidBox.x + playerSolidBox.w > obj.x && playerSolidBox.x < obj.x + bW) {
                         if (player.gravitySign === 1) {
                             if (playerSolidBox.y + playerSolidBox.h >= obj.y && playerSolidBox.y + playerSolidBox.h <= obj.y + 10 && player.vy >= 0) {
                                 player.y = obj.y - player.height; player.vy = 0; onSolid = true;
+                                if (player.mode === "wave") player.isSliding = true;
                             } else if (playerSolidBox.y < obj.y + bH && playerSolidBox.y + playerSolidBox.h > obj.y) {
-                                if (player.mode === "wave") { if (!isGodMode) handlePlayerDeath(); }
-                                else { if (!isGodMode) handlePlayerDeath(); }
+                                if (player.mode === "wave") {
+                                    if (!hasDBloakActive && !isGodMode) handlePlayerDeath();
+                                } else {
+                                    if (!isGodMode) handlePlayerDeath();
+                                }
                             }
                         } else {
                             if (playerSolidBox.y <= obj.y + bH && playerSolidBox.y >= obj.y + bH - 10 && player.vy <= 0) {
                                 player.y = obj.y + bH; player.vy = 0; onSolid = true;
+                                if (player.mode === "wave") player.isSliding = true;
                             } else if (playerSolidBox.y < obj.y + bH && playerSolidBox.y + playerSolidBox.h > obj.y) {
-                                if (!isGodMode) handlePlayerDeath();
+                                if (player.mode === "wave") {
+                                    if (!hasDBloakActive && !isGodMode) handlePlayerDeath();
+                                } else {
+                                    if (!isGodMode) handlePlayerDeath();
+                                }
                             }
                         }
                     }
+                }
+            }
+
+            if (player.mode === "wave" && onSolid && hasDBloakActive) {
+                player.isSliding = true;
+            } else if (player.mode === "wave" && !onSolid) {
+                if (player.y > 0 && player.y < 690) {
+                    player.isSliding = false;
                 }
             }
 
@@ -710,10 +928,10 @@
                         player.rotTarget = player.rotation + 90 * player.gravitySign;
                     }
                 } else {
-                    player.rotation += 2.14 * player.gravitySign;
+                    player.rotation += 0.535 * player.gravitySign;
                 }
             } else if (player.mode === "ship" && !player.isGrounded) {
-                player.rotation = player.vy * 6.5 * player.gravitySign;
+                player.rotation = player.vy * 26 * player.gravitySign;
                 if (player.rotation > 45) player.rotation = 45;
                 if (player.rotation < -45) player.rotation = -45;
             }
@@ -730,32 +948,33 @@
 
             for (let i = 0; i < gameObjects.length; i++) {
                 let obj = gameObjects[i];
+                if (obj.kill === false) continue;
                 let s = obj.scale || 1;
                 
                 if (obj.type >= 8 && obj.type <= 12) {
                     if (Math.random() < 0.2) {
-                        let pColor = "#f1c40f";
+                        let pColor = profileSettings.fx;
                         if (obj.type === 9) pColor = "#3498db";
                         if (obj.type === 10) pColor = "#ff6b81";
                         if (obj.type === 11) pColor = "#2ecc71";
                         if (obj.type === 12) pColor = "#9b59b6";
                         particles.push({
                             type: "ambient", x: obj.x + Math.random() * (BLOCK_SIZE * s), y: obj.y + Math.random() * (BLOCK_SIZE * 3 * s),
-                            vx: (Math.random() - 0.5) * 1, vy: -1.5 - Math.random() * 2.5,
-                            size: 2 + Math.random() * 2.5, alpha: 0.9, fade: 0.02 + Math.random() * 0.02, color: pColor
+                            vx: (Math.random() - 0.5) * 1, vy: -0.4 - Math.random() * 0.6,
+                            size: 2 + Math.random() * 2.5, alpha: 0.9, fade: 0.005 + Math.random() * 0.005, color: pColor
                         });
                     }
                 }
 
                 if (obj.type === 4 || obj.type === 5 || obj.type === 6 || obj.type === 7) {
                     if (Math.random() < 0.05) {
-                        let pColor = (obj.type === 4 || obj.type === 5) ? "#f1c40f" : "#3498db";
+                        let pColor = (obj.type === 4 || obj.type === 5) ? profileSettings.fx : "#3498db";
                         let angle = Math.random() * Math.PI * 2;
                         let radius = (obj.type === 4 || obj.type === 6) ? 15 : 10;
                         particles.push({
                             type: "ambient", x: obj.x + (BLOCK_SIZE * s) / 2 + Math.cos(angle) * radius, y: obj.y + (BLOCK_SIZE * s) / 2 + Math.sin(angle) * radius,
-                            vx: Math.cos(angle) * 0.4, vy: Math.sin(angle) * 0.4,
-                            size: 1.5 + Math.random() * 2, alpha: 0.8, fade: 0.01 + Math.random() * 0.01, color: pColor
+                            vx: Math.cos(angle) * 0.1, vy: Math.sin(angle) * 0.1,
+                            size: 1.5 + Math.random() * 2, alpha: 0.8, fade: 0.003 + Math.random() * 0.003, color: pColor
                         });
                     }
                 }
@@ -767,27 +986,30 @@
                     let sawHitbox = { x: obj.x + 6 * s, y: obj.y + 6 * s, w: 48 * s, h: 48 * s };
                     if (checkAABB(playerDangerBox, sawHitbox) && !isGodMode) handlePlayerDeath();
                 } else if (obj.type === 4) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + (BLOCK_SIZE * s) - 6, w: BLOCK_SIZE * s, h: 6 })) {
+                    let padH = (obj.type === 15 ? BLOCK_SIZE / 2 : BLOCK_SIZE) * s;
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + padH - 6, w: BLOCK_SIZE * s, h: 6 })) {
                         hitAnyPad = true;
                         if (!padCooldown) {
-                            player.vy = -21.5 * player.gravitySign; player.isGrounded = false;
+                            player.vy = -5.375 * player.gravitySign; player.isGrounded = false;
                             if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 180 * player.gravitySign; }
-                            spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#f1c40f");
+                            spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, profileSettings.fx);
                             padCooldown = true;
                         }
                     }
                 } else if (obj.type === 5) {
                     if (player.jumpHold && checkAABB(playerDangerBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * s })) {
-                        player.vy = -18.5 * player.gravitySign; player.isGrounded = false;
+                        player.vy = -4.625 * player.gravitySign; player.isGrounded = false;
                         if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 180 * player.gravitySign; }
-                        spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#f1c40f");
+                        spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, profileSettings.fx);
+                        player.jumpHold = false;
                     }
                 } else if (obj.type === 6) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + (BLOCK_SIZE * s) - 6, w: BLOCK_SIZE * s, h: 6 })) {
+                    let padH = (obj.type === 15 ? BLOCK_SIZE / 2 : BLOCK_SIZE) * s;
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + padH - 6, w: BLOCK_SIZE * s, h: 6 })) {
                         hitAnyPad = true;
                         if (!padCooldown) {
                             player.gravitySign = -player.gravitySign;
-                            player.vy = 9.5 * player.gravitySign; player.isGrounded = false;
+                            player.vy = 2.375 * player.gravitySign; player.isGrounded = false;
                             if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 90 * player.gravitySign; }
                             spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#3498db");
                             padCooldown = true;
@@ -796,9 +1018,10 @@
                 } else if (obj.type === 7) {
                     if (player.jumpHold && checkAABB(playerDangerBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * s })) {
                         player.gravitySign = -player.gravitySign;
-                        player.vy = 5.2 * player.gravitySign; player.isGrounded = false;
+                        player.vy = 1.3 * player.gravitySign; player.isGrounded = false;
                         if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 90 * player.gravitySign; }
                         spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#3498db");
+                        player.jumpHold = false;
                     }
                 } else if (obj.type === 8) {
                     if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * 3 * s })) player.gravitySign = -1;
@@ -848,19 +1071,37 @@
             gameCtx.strokeStyle = "#000000"; gameCtx.lineWidth = 4;
             gameCtx.beginPath(); gameCtx.moveTo(cameraX, 720); gameCtx.lineTo(cameraX + gameCanvas.width, 720); gameCtx.stroke();
 
+            if (player.mode === "wave" && waveTrail.length > 1) {
+                gameCtx.save();
+                gameCtx.strokeStyle = profileSettings.trail;
+                gameCtx.lineWidth = 4;
+                gameCtx.beginPath();
+                gameCtx.moveTo(waveTrail[0].x, waveTrail[0].y);
+                for (let i = 1; i < waveTrail.length; i++) {
+                    gameCtx.lineTo(waveTrail[i].x, waveTrail[i].y);
+                }
+                gameCtx.stroke();
+                gameCtx.restore();
+            }
+
             gameObjects.forEach(obj => { 
-                drawObjectOnCanvas(gameCtx, obj); 
+                drawObjectOnCanvas(gameCtx, obj, false); 
                 if (showHitboxes) {
                     let s = obj.scale || 1;
-                    if (obj.type === 1) {
-                        gameCtx.strokeStyle = "#2ecc71"; gameCtx.lineWidth = 2;
-                        gameCtx.strokeRect(obj.x, obj.y, BLOCK_SIZE * s, BLOCK_SIZE * s);
-                    } else if (obj.type === 2) {
-                        gameCtx.strokeStyle = "#e74c3c"; gameCtx.lineWidth = 2;
-                        gameCtx.strokeRect(obj.x + 3 * s, obj.y + 6 * s, 24 * s, 24 * s);
-                    } else if (obj.type === 3) {
-                        gameCtx.strokeStyle = "#e74c3c"; gameCtx.lineWidth = 2;
-                        gameCtx.strokeRect(obj.x + 6 * s, obj.y + 6 * s, 48 * s, 48 * s);
+                    if (obj.kill !== false) {
+                        if (obj.type === 1) {
+                            gameCtx.strokeStyle = "#2ecc71"; gameCtx.lineWidth = 2;
+                            gameCtx.strokeRect(obj.x, obj.y, BLOCK_SIZE * s, BLOCK_SIZE * s);
+                        } else if (obj.type === 15) {
+                            gameCtx.strokeStyle = "#2ecc71"; gameCtx.lineWidth = 2;
+                            gameCtx.strokeRect(obj.x, obj.y, BLOCK_SIZE * s, (BLOCK_SIZE / 2) * s);
+                        } else if (obj.type === 2) {
+                            gameCtx.strokeStyle = "#e74c3c"; gameCtx.lineWidth = 2;
+                            gameCtx.strokeRect(obj.x + 3 * s, obj.y + 6 * s, 24 * s, 24 * s);
+                        } else if (obj.type === 3) {
+                            gameCtx.strokeStyle = "#e74c3c"; gameCtx.lineWidth = 2;
+                            gameCtx.strokeRect(obj.x + 6 * s, obj.y + 6 * s, 48 * s, 48 * s);
+                        }
                     }
                 }
             });
@@ -876,18 +1117,19 @@
             if (player.gravitySign === -1) gameCtx.scale(1, -1);
             
             if (player.mode === "ship") {
-                gameCtx.fillStyle = "#000000"; gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 2;
+                gameCtx.fillStyle = profileSettings.inside; gameCtx.strokeStyle = profileSettings.outline; gameCtx.lineWidth = 2;
                 gameCtx.beginPath(); gameCtx.moveTo(30, 0); gameCtx.lineTo(-10, -10); gameCtx.lineTo(-30, -10); gameCtx.lineTo(-30, 8); gameCtx.lineTo(-20, 15); gameCtx.lineTo(4, 8); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
                 gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath(); gameCtx.moveTo(8, -2); gameCtx.lineTo(-4, -5); gameCtx.lineTo(-12, -2); gameCtx.closePath(); gameCtx.fill();
-                gameCtx.fillStyle = "#000000"; gameCtx.beginPath(); gameCtx.moveTo(-12, -10); gameCtx.lineTo(-24, -25); gameCtx.lineTo(-28, -25); gameCtx.lineTo(-22, -10); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
+                gameCtx.fillStyle = profileSettings.inside; gameCtx.beginPath(); gameCtx.moveTo(-12, -10); gameCtx.lineTo(-24, -25); gameCtx.lineTo(-28, -25); gameCtx.lineTo(-22, -10); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
                 gameCtx.beginPath(); gameCtx.moveTo(-8, 4); gameCtx.lineTo(-24, 10); gameCtx.lineTo(-20, 14); gameCtx.lineTo(-4, 6); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
-                gameCtx.fillStyle = "#000000"; gameCtx.fillRect(-12, -5, 12, 12); gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 1.5; gameCtx.strokeRect(-10, -3, 8, 8);
+                
+                gameCtx.fillStyle = profileSettings.inside; gameCtx.fillRect(-12, -5, 12, 12); gameCtx.strokeStyle = profileSettings.outline; gameCtx.lineWidth = 1.5; gameCtx.strokeRect(-10, -3, 8, 8);
             } else if (player.mode === "wave") {
-                gameCtx.fillStyle = "#000000"; gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 2.5;
+                gameCtx.fillStyle = profileSettings.inside; gameCtx.strokeStyle = profileSettings.outline; gameCtx.lineWidth = 2.5;
                 gameCtx.beginPath(); gameCtx.moveTo(player.width / 2, 0); gameCtx.lineTo(-player.width / 2, -player.height / 2); gameCtx.lineTo(-player.width / 4, 0); gameCtx.lineTo(-player.width / 2, player.height / 2); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
             } else {
-                gameCtx.fillStyle = "#000000"; gameCtx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
-                gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 3; gameCtx.strokeRect(-player.width / 2 + 4, -player.height / 2 + 4, player.width - 8, player.height - 8);
+                gameCtx.fillStyle = profileSettings.inside; gameCtx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+                gameCtx.strokeStyle = profileSettings.outline; gameCtx.lineWidth = 3; gameCtx.strokeRect(-player.width / 2 + 4, -player.height / 2 + 4, player.width - 8, player.height - 8);
             }
             gameCtx.restore(); 
 
@@ -907,6 +1149,7 @@
             player.x = startPosObj ? startPosObj.x : 50;
             player.y = startPosObj ? startPosObj.y : (player.gravitySign === 1 ? 690 : 0);
             player.vy = 0; player.rotation = 0; player.isGrounded = true; player.isRotating = false;
+            waveTrail = [];
         }
 
         function stopActualGame() {
@@ -963,26 +1206,24 @@
             document.getElementById("game-pause-overlay").style.display = "none";
             let startPosObj = gameObjects.find(o => o.type === 13);
             resetPlayerState(startPosObj);
-            particles = [];
+            particles = []; waveTrail = [];
             gameLoopId = setInterval(gameUpdateLoop, FRAME_TIME);
         });
         document.getElementById("game-exit-btn").addEventListener("click", () => {
             document.getElementById("game-pause-overlay").style.display = "none"; stopActualGame();
         });
 
-        const tabs = ["build", "edit", "delete"];
-        tabs.forEach(tab => {
-            document.getElementById(`tab-${tab}`).addEventListener("click", () => {
-                tabs.forEach(t => { document.getElementById(`tab-${t}`).classList.remove("active"); document.getElementById(`panel-${t}`).style.display = "none"; });
-                activeTab = tab; document.getElementById(`tab-${tab}`).classList.add("active"); document.getElementById(`panel-${tab}`).style.display = "block"; drawEditor();
-            });
+        const profOverlay = document.getElementById("profile-overlay");
+        document.getElementById("profile-btn-bottom-left").addEventListener("click", () => {
+            profOverlay.style.display = "flex";
         });
-
-        document.querySelectorAll(".palette-item").forEach(item => {
-            item.addEventListener("click", () => {
-                document.querySelectorAll(".palette-item").forEach(i => i.classList.remove("active"));
-                item.classList.add("active"); selectedBlockType = parseInt(item.getAttribute("data-type"), 10);
-            });
+        document.getElementById("profile-close-btn").addEventListener("click", () => {
+            profileSettings.outline = document.getElementById("prof-out-color").value;
+            profileSettings.inside = document.getElementById("prof-in-color").value;
+            profileSettings.fx = document.getElementById("prof-fx-color").value;
+            profileSettings.trail = document.getElementById("prof-trail-color").value;
+            try { localStorage.setItem("gd_player_profile", JSON.stringify(profileSettings)); } catch(e) {}
+            profOverlay.style.display = "none";
         });
 
         initData();
