@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>sandpex — Секретный Архив: Тетрис</title>
+    <title>sandpex — Тетрис Легенд</title>
     <style>
         @font-face {
             font-family: 'Minecraftia';
@@ -13,58 +13,57 @@
         * { box-sizing: border-box; font-family: 'Minecraftia', sans-serif !important; user-select: none; }
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0a0a0a; color: #ffffff; display: flex; justify-content: center; align-items: center; }
         
-        #tetris-stage { width: 900px; height: 600px; border: 4px solid #333333; position: relative; background: #111111; overflow: hidden; display: flex; padding: 20px; gap: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); transition: all 0.5s ease; }
+        #tetris-stage { width: 900px; height: 600px; border: 4px solid #ffffff; position: relative; background: #111111; overflow: hidden; display: flex; padding: 20px; gap: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); transition: all 0.5s ease; }
         
         #tetris-stage.hyper-mode {
-            animation: stagePulse 0.5s infinite alternate, borderGlitch 3s infinite linear;
+            animation: stagePulse 0.5s infinite alternate, borderPulse 1.5s infinite linear;
         }
         
-        @keyframes stagePulse { 0% { background: #111111; } 100% { background: #1a1111; } }
-        @keyframes borderGlitch { 0% { border-color: #333333; } 50% { border-color: #ff003c; box-shadow: 0 0 20px rgba(255,0,60,0.4); } 100% { border-color: #333333; } }
+        @keyframes stagePulse { 0% { background: #111111; } 100% { background: #1f1111; } }
+        @keyframes borderPulse { 0% { border-color: #ffffff; } 50% { border-color: #ff003c; box-shadow: 0 0 20px rgba(255,0,60,0.4); } 100% { border-color: #ffffff; } }
 
-        .game-grid-container { width: 340px; height: 552px; background: #000000; border: 3px solid #222222; position: relative; display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); }
-        .tetris-cell { border: 1px solid rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-shadow: 0 0 4px rgba(0,0,0,0.8); position: relative; }
+        .game-grid-container { width: 340px; height: 552px; background: #000000; border: 3px solid #333333; position: relative; display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); }
+        .tetris-cell { border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-shadow: 0 0 4px rgba(0,0,0,0.8); position: relative; }
         
-        .side-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; background: rgba(255,255,255,0.02); border: 2px solid #222; border-radius: 6px; padding: 15px; justify-content: space-between; }
-        .stat-box { background: #000; border: 1px solid #333; padding: 12px; border-radius: 4px; }
-        .stat-label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.2); }
+        .side-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; background: rgba(255,255,255,0.02); border: 2px solid #333333; border-radius: 6px; padding: 15px; justify-content: space-between; }
+        .stat-box { background: #000000; border: 1px solid #333333; padding: 12px; border-radius: 4px; }
+        .stat-label { font-size: 11px; color: #888888; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #ffffff; }
         
-        #next-piece-preview { width: 120px; height: 120px; background: #000; border: 1px solid #333; margin-top: 5px; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+        #next-piece-preview { width: 120px; height: 120px; background: #000000; border: 1px solid #333333; margin-top: 5px; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
         
-        #control-guide-banner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; border: 4px solid #333; transition: opacity 0.5s ease; }
-        #control-guide-banner h2 { color: #00ff66; font-size: 26px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(0,255,102,0.3); }
-        .guide-grid { display: grid; grid-template-columns: 140px 1fr; gap: 12px; max-width: 500px; text-align: left; font-size: 13px; color: #ccc; margin-bottom: 25px; }
-        .guide-key { color: #ffffff; font-weight: bold; background: #222; border: 1px solid #444; padding: 2px 6px; border-radius: 4px; text-align: center; font-family: monospace !important; }
+        #control-guide-banner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; border: 4px solid #ffffff; transition: opacity 0.4s ease; }
+        #control-guide-banner h2 { color: #ffffff; font-size: 26px; margin-bottom: 25px; }
+        .guide-grid { display: grid; grid-template-columns: 140px 1fr; gap: 14px; max-width: 500px; text-align: left; font-size: 13px; color: #cccccc; margin-bottom: 30px; }
+        .guide-key { color: #ffffff; font-weight: bold; background: #222222; border: 1px solid #555555; padding: 2px 6px; border-radius: 4px; text-align: center; font-family: monospace !important; }
         
-        #gameover-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        #gameover-screen h2 { color: #ff003c; font-size: 40px; margin-bottom: 15px; animation: textGlow 1s infinite alternate; }
-        @keyframes textGlow { 0% { text-shadow: 0 0 10px rgba(255,0,60,0.5); } 100% { text-shadow: 0 0 25px rgba(255,0,60,0.9); } }
+        #gameover-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #gameover-screen h2 { color: #ff003c; font-size: 40px; margin-bottom: 15px; }
 
-        .btn { background: #000; color: #fff; border: 2px solid #333; padding: 10px 20px; font-size: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.2s; text-decoration: none; display: inline-block; text-align: center; }
-        .btn:hover { background: #ff003c; border-color: #ff003c; color: #fff; box-shadow: 0 0 15px rgba(255,0,60,0.4); }
+        .btn { background: #000000; color: #ffffff; border: 2px solid #ffffff; padding: 12px 28px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.2s; text-decoration: none; display: inline-block; text-align: center; }
+        .btn:hover { background: #ffffff; color: #000000; }
     </style>
 </head>
 <body>
 
     <div id="tetris-stage">
         <div id="control-guide-banner">
-            <h2>СИСТЕМА АКТИВИРОВАНА</h2>
+            <h2>УПРАВЛЕНИЕ ИГРОЙ</h2>
             <div class="guide-grid">
-                <div class="guide-key">A / D / ➔ ➔</div><div>Движение влево / вправо</div>
-                <div class="guide-key">W / Q / E / ➔</div><div>Переворот (Ротация блока)</div>
-                <div class="guide-key">S / ➔</div><div>Быстрое падение вниз</div>
+                <div class="guide-key">A / D / ◀ / ▶</div><div>Движение влево / вправо</div>
+                <div class="guide-key">W / Q / E / ▲</div><div>Переворот фигуры</div>
+                <div class="guide-key">S / ▼</div><div>Быстрое падение вниз</div>
             </div>
-            <p style="font-size: 11px; color: #666; margin-bottom: 15px;">Каждые 5 уровней сложность критически возрастает</p>
-            <button class="btn" id="start-game-btn">ЗАПУСТИТЬ АРХИВ</button>
+            <p style="font-size: 11px; color: #777777; margin-bottom: 20px;">Каждые 5 линий сложность возрастает</p>
+            <button class="btn" id="start-game-btn">ИГРАТЬ</button>
         </div>
 
         <div id="gameover-screen">
-            <h2>АРХИВ ПЕРЕГРУЖЕН</h2>
-            <p id="final-score-txt" style="font-size: 16px; margin-bottom: 20px; color: #aaa;"></p>
-            <div style="display:flex; gap: 10px;">
-                <button class="btn" id="restart-btn">Перезапуск</button>
-                <a class="btn" href="index.html" style="background:#222;">Выйти на карту</a>
+            <h2>ИГРА ОКОНЧЕНА</h2>
+            <p id="final-score-txt" style="font-size: 16px; margin-bottom: 25px; color: #aaaaaa;"></p>
+            <div style="display:flex; gap: 12px;">
+                <button class="btn" id="restart-btn">Играть снова</button>
+                <a class="btn" href="index.html" style="background:#222222; border-color:#444444;">Выйти на карту</a>
             </div>
         </div>
 
@@ -72,16 +71,16 @@
         <div class="side-panel">
             <div>
                 <div class="stat-box" style="margin-bottom: 12px;">
-                    <div class="stat-label">АРХИВНЫЙ СЧЕТ</div>
+                    <div class="stat-label">СЧЁТ</div>
                     <div class="stat-value" id="score-val">000000</div>
                 </div>
                 <div class="stat-box" style="margin-bottom: 12px;">
                     <div class="stat-label">ЛИНИИ</div>
-                    <div class="stat-value" id="lines-val" style="color: #3498db; text-shadow: 0 0 10px rgba(52,152,219,0.2);">0</div>
+                    <div class="stat-value" id="lines-val">0</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">УРОВЕНЬ СЛОЖНОСТИ</div>
-                    <div class="stat-value" id="level-val" style="color: #ff003c; text-shadow: 0 0 10px rgba(255,0,60,0.2);">1</div>
+                    <div class="stat-label">УРОВЕНЬ</div>
+                    <div class="stat-value" id="level-val">1</div>
                 </div>
             </div>
 
@@ -91,7 +90,7 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a class="btn" href="index.html" style="background: rgba(0,0,0,0.4); font-size: 11px;">В Терминал</a>
+                <a class="btn" href="index.html" style="font-size: 11px; padding: 8px 16px;">На карту</a>
             </div>
         </div>
     </div>
@@ -128,13 +127,13 @@
         ];
 
         const SHAPES = [
-            [[1, 1, 1, 1]],
-            [[1, 1, 1], [0, 1, 0]],
-            [[1, 1, 1], [1, 0, 0]],
-            [[1, 1, 1], [0, 0, 1]],
-            [[1, 1], [1, 1]],
-            [[1, 1, 0], [0, 1, 1]],
-            [[0, 1, 1], [1, 1, 0]]
+            [[[1,1,1,1]], [[1],[1],[1],[1]]],
+            [[[1,1,1],[0,1,0]], [[0,1],[1,1],[0,1]], [[0,1,0],[1,1,1]], [[1,0],[1,1],[1,0]]],
+            [[[1,1,1],[1,0,0]], [[1,1],[0,1],[0,1]], [[0,0,1],[1,1,1]], [[1,0],[1,0],[1,1]]],
+            [[[1,1,1],[0,0,1]], [[0,1],[0,1],[1,1]], [[1,0,0],[1,1,1]], [[1,1],[1,0],[1,0]]],
+            [[[1,1],[1,1]]],
+            [[[1,1,0],[0,1,1]], [[0,1],[1,1],[1,0]]],
+            [[[0,1,1],[1,1,0]], [[1,0],[1,1],[0,1]]]
         ];
 
         let currentPiece = null;
@@ -299,7 +298,7 @@
                         cells[idx].textContent = block.name.substring(0, 4);
                     } else {
                         cells[idx].style.background = "transparent";
-                        cells[idx].style.borderColor = "rgba(255,255,255,0.03)";
+                        cells[idx].style.borderColor = "rgba(255,255,255,0.05)";
                         cells[idx].textContent = "";
                     }
                 }
@@ -332,7 +331,7 @@
                 const shape = nextPiece.shape;
                 const size = shape.length;
                 const offsetR = Math.floor((4 - size) / 2);
-                const offsetC = Math.floor((4 - shape[0].length) / 2);
+                const offsetC = Math.floor((4 - shape.length) / 2);
                 for (let r = 0; r < size; r++) {
                     for (let c = 0; c < shape[r].length; c++) {
                         if (shape[r][c]) {
@@ -350,7 +349,7 @@
 
         function startGame() {
             guideBanner.style.opacity = "0";
-            setTimeout(() => { guideBanner.style.display = "none"; }, 500);
+            setTimeout(() => { guideBanner.style.display = "none"; }, 400);
             gameoverScreen.style.display = "none";
             matrix = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
             score = 0; linesCleared = 0; level = 1; isGameOver = false;
@@ -393,13 +392,15 @@
         document.getElementById("start-game-btn").addEventListener("click", startGame);
         document.getElementById("restart-btn").addEventListener("click", startGame);
 
-        SHAPES[0] = [[[1, 1, 1, 1]], [[1], [1], [1], [1]]];
-        SHAPES[1] = [[[1, 1, 1], [0, 1, 0]], [[0, 1], [1, 1], [0, 1]], [[0, 1, 0], [1, 1, 1]], [[1, 0], [1, 1], [1, 0]]];
-        SHAPES[2] = [[[1, 1, 0], [0, 1, 1]], [[0, 1], [1, 1], [1, 0]]];
-        SHAPES[3] = [[[0, 1, 1], [1, 1, 0]], [[1, 0], [1, 1], [0, 1]]];
-        SHAPES[4] = [[[1, 1], [1, 1]]];
-        SHAPES[5] = [[[1, 1, 1], [1, 0, 0]], [[1, 1], [0, 1], [0, 1]], [[0, 0, 1], [1, 1, 1]], [[1, 0], [1, 0], [1, 1]]];
-        SHAPES[6] = [[[1, 1, 1], [0, 0, 1]], [[0, 1], [0, 1], [1, 1]], [[1, 0, 0], [1, 1, 1]], [[1, 1], [1, 0], [1, 0]]];
+        const s1 = [[[0,1,0],[1,1,1],[0,0,0]],[[0,1,0],[0,1,1],[0,1,0]],[[0,0,0],[1,1,1],[0,1,0]],[[0,1,0],[1,1,0],[0,1,0]]];
+        const s2 = [[[1,1,0],[0,1,1],[0,0,0]],[[0,0,1],[0,1,1],[0,1,0]]];
+        const s3 = [[[0,1,1],[1,1,0],[0,0,0]],[[0,1,0],[0,1,1],[0,0,1]]];
+        const s4 = [[[1,1],[1,1]]];
+        const s5 = [[[1,1,1,1],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]]];
+        const s6 = [[[1,0,0],[1,1,1],[0,0,0]],[[0,1,1],[0,1,0],[0,1,0]],[[0,0,0],[1,1,1],[0,0,1]],[[0,1,0],[0,1,0],[1,1,0]]];
+        const s7 = [[[0,0,1],[1,1,1],[0,0,0]],[[0,1,0],[0,1,0],[0,1,1]],[[0,0,0],[1,1,1],[1,0,0]],[[1,1,0],[0,1,0],[0,1,0]]];
+        
+        SHAPES[0] = s5; SHAPES[1] = s6; SHAPES[2] = s7; SHAPES[3] = s4; SHAPES[4] = s2; SHAPES[5] = s1; SHAPES[6] = s3;
     </script>
 </body>
 </html>
