@@ -160,7 +160,7 @@
             const legend = legends[Math.floor(Math.random() * legends.length)];
             return {
                 shape: JSON.parse(JSON.stringify(shapeMatrix)),
-                x: Math.floor((COLS - shapeMatrix.length) / 2),
+                x: Math.floor((COLS - shapeMatrix[0].length) / 2),
                 y: 0,
                 color: legend.color,
                 name: legend.name
@@ -391,13 +391,15 @@
         document.getElementById("start-game-btn").addEventListener("click", startGame);
         document.getElementById("restart-btn").addEventListener("click", startGame);
 
-        SHAPES[0] = [[1, 1, 1, 1]];
-        SHAPES[1] = [[1, 1, 1], [0, 1, 0]];
-        SHAPES[2] = [[1, 1, 1], [1, 0, 0]];
-        SHAPES[3] = [[1, 1, 1], [0, 0, 1]];
-        SHAPES[4] = [[1, 1], [1, 1]];
-        SHAPES[5] = [[1, 1, 0], [0, 1, 1]];
-        SHAPES[6] = [[0, 1, 1], [1, 1, 0]];
+        SHAPES = [
+            [[1,1,1,1]],
+            [[1,1,1],[0,0,1]],
+            [[1,1,1],[1,0,0]],
+            [[1,1],[1,1]],
+            [[0,1,1],[1,1,0]],
+            [[1,1,1],[0,1,0]],
+            [[1,1,0],[0,1,1]]
+        ];
     </script>
 </body>
 </html>
