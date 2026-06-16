@@ -127,13 +127,13 @@
         ];
 
         const SHAPES = [
-            [[1,1,1,1]],
-            [[1,0,0],[1,1,1]],
-            [[0,0,1],[1,1,1]],
-            [[1,1],[1,1]],
-            [[0,1,1],[1,1,0]],
-            [[0,1,0],[1,1,1]],
-            [[1,1,0],[0,1,1]]
+            [[1, 1, 1, 1]],
+            [[1, 1, 1], [0, 0, 1]],
+            [[1, 1, 1], [1, 0, 0]],
+            [[1, 1], [1, 1]],
+            [[0, 1, 1], [1, 1, 0]],
+            [[1, 1, 1], [0, 1, 0]],
+            [[1, 1, 0], [0, 1, 1]]
         ];
 
         let currentPiece = null;
@@ -160,7 +160,7 @@
             const legend = legends[Math.floor(Math.random() * legends.length)];
             return {
                 shape: JSON.parse(JSON.stringify(shapeMatrix)),
-                x: Math.floor((COLS - shapeMatrix[0].length) / 2),
+                x: Math.floor((COLS - shapeMatrix.length) / 2),
                 y: 0,
                 color: legend.color,
                 name: legend.name
@@ -330,7 +330,7 @@
                 const shape = nextPiece.shape;
                 const size = shape.length;
                 const offsetR = Math.floor((4 - size) / 2);
-                const offsetC = Math.floor((4 - shape[0].length) / 2);
+                const offsetC = Math.floor((4 - shape.length) / 2);
                 for (let r = 0; r < size; r++) {
                     for (let c = 0; c < shape[r].length; c++) {
                         if (shape[r][c]) {
@@ -393,11 +393,11 @@
 
         SHAPES[0] = [[1, 1, 1, 1]];
         SHAPES[1] = [[1, 1, 1], [0, 1, 0]];
-        SHAPES[2] = [[1, 1, 0], [0, 1, 1]];
-        SHAPES[3] = [[0, 1, 1], [1, 1, 0]];
+        SHAPES[2] = [[1, 1, 1], [1, 0, 0]];
+        SHAPES[3] = [[1, 1, 1], [0, 0, 1]];
         SHAPES[4] = [[1, 1], [1, 1]];
-        SHAPES[5] = [[1, 1, 1], [1, 0, 0]];
-        SHAPES[6] = [[1, 1, 1], [0, 0, 1]];
+        SHAPES[5] = [[1, 1, 0], [0, 1, 1]];
+        SHAPES[6] = [[0, 1, 1], [1, 1, 0]];
     </script>
 </body>
 </html>
