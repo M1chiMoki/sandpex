@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Geometry Dash — HTML5 Scale Edition</title>
+    <title>Geometry Dash — Ultimate Scale Engine</title>
     <style>
         @font-face {
             font-family: 'Minecraftia';
@@ -28,7 +28,6 @@
         #editor-btn-left, #dev-btn-right { width: 140px; height: 140px; border-radius: 16px; font-size: 16px; text-transform: uppercase; }
         #dev-btn-right { background: #ffffff; color: #000000; }
         #dev-btn-right:hover { background: #000000; color: #ffffff; }
-        
         #play-screen { background: #ffffff; }
         .level-selector-row { display: flex; align-items: center; justify-content: center; gap: 60px; width: 100%; height: 100%; position: relative; }
         .nav-arrow { width: 80px; height: 80px; border: 4px solid #000000; background: #ffffff; font-size: 32px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 12px; transition: 0.15s; z-index: 10; }
@@ -47,7 +46,7 @@
         .tab-btn.active { background: #000000; color: #ffffff; }
         
         .palette-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .palette-item { aspect-ratio: 1; border: 3px solid #000000; background: #ffffff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border-radius: 6px; text-align: center; padding: 4px; text-transform: uppercase; }
+        .palette-item { aspect-ratio: 1; border: 3px solid #000000; background: #ffffff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border-radius: 6px; text-align: center; padding: 4px; text-transform: uppercase; }
         .palette-item.active { background: #eeeeee; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
         .palette-item span { font-size: 20px; margin-bottom: 4px; }
         
@@ -70,6 +69,13 @@
         .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #000000; border-radius: 50%; transition: 0.2s; }
         .toggle-switch.active { background: #2ecc71; }
         .toggle-switch.active::after { left: 31px; background: #ffffff; }
+        
+        .scale-slider-container { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .scale-slider-label { font-size: 12px; font-weight: bold; color: #555555; text-transform: uppercase; }
+        .scale-slider { width: 100%; height: 6px; background: #e0e0e0; border: 1px solid #000000; border-radius: 3px; outline: none; cursor: pointer; -webkit-appearance: none; }
+        .scale-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #000000; border: 1px solid #ffffff; border-radius: 50%; cursor: pointer; }
+        
+        .hex-input-box { width: 100%; height: 36px; background: #ffffff; border: 2px solid #000000; border-radius: 4px; padding: 0 8px; font-size: 14px; font-weight: bold; outline: none; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -113,7 +119,7 @@
                         <button class="tab-btn" id="tab-delete">Delete</button>
                     </div>
                     
-                    <div class="editor-panel-box" id="panel-build" style="max-height: 600px; overflow-y: auto;">
+                    <div class="editor-panel-box" id="panel-build" style="max-height: 500px; overflow-y: auto;">
                         <div class="palette-grid">
                             <button class="palette-item active" data-type="1"><span>⬜</span>Блок</button>
                             <button class="palette-item" data-type="2"><span>▲</span>Шип</button>
@@ -126,6 +132,9 @@
                             <button class="palette-item" data-type="9"><span>⧉</span>С.Порт</button>
                             <button class="palette-item" data-type="10"><span>⧉</span>Р.Порт</button>
                             <button class="palette-item" data-type="11"><span>⧉</span>З.Порт</button>
+                            <button class="palette-item" data-type="12"><span>⧉</span>В.Порт</button>
+                            <button class="palette-item" data-type="13"><span>🚩</span>S.Pos</button>
+                            <button class="palette-item" data-type="14"><span>🏁</span>End</button>
                         </div>
                     </div>
                     
@@ -136,6 +145,11 @@
                             <button class="action-btn" id="act-copypaste" style="font-size:12px;">Copy+Paste</button>
                             <button class="action-btn" id="act-edit-obj" style="background:#e67e22; color:#fff; border-color:#e67e22;">Edit Obj</button>
                         </div>
+                        <input type="text" id="hex-color-input" class="hex-input-box" placeholder="#000000" maxlength="7">
+                        <div class="scale-slider-container">
+                            <span class="scale-slider-label">Scale: <span id="scale-slider-val">1.0</span></span>
+                            <input type="range" id="obj-scale-slider" class="scale-slider" min="0.5" max="3" step="0.1" value="1">
+                        </div>
                     </div>
 
                     <div class="editor-panel-box" id="panel-delete" style="display:none;">
@@ -144,8 +158,8 @@
                 </div>
                 
                 <div class="editor-panel-box" style="margin-bottom:0;">
-                    <div class="stat-label">Редактор</div>
-                    <div style="font-size:13px; color:#333; line-height:1.4; margin-top:6px;">Сетка: 30px<br>Привязка по клеткам</div>
+                    <div class="stat-label" id="brush-mode-txt">Кисть: Single (TAB)</div>
+                    <div style="font-size:12px; color:#333; line-height:1.4; margin-top:6px;">SHIFT + Мышь: Рамка<br>CTRL + Мышь: Без сетки</div>
                 </div>
             </div>
         </div>
@@ -194,9 +208,29 @@
         let gameObjects = [];
         let particles = [];
         let padCooldown = false;
+        let brushMode = "single";
         
+        let editorScrollX = 0;
+        let editorScrollY = 0;
+        let isEditorPanning = false;
+        let editorPanStartX = 0;
+        let editorPanStartY = 0;
+        let isMoreBuilding = false;
+        
+        let selectionStartX = 0;
+        let selectionStartY = 0;
+        let isSelectionBoxActive = false;
+        let selectionCurrentX = 0;
+        let selectionCurrentY = 0;
+        let selectedObjectsGroup = [];
+        let isCtrlPressed = false;
+        let isShiftPressed = false;
+        let dragStartMouseX = 0;
+        let dragStartMouseY = 0;
+        let isDraggingGroup = false;
+
         let player = { 
-            x: 50, y: 600, vx: 6.5, vy: 0, rotation: 0, width: 30, height: 30, 
+            x: 50, y: 690, vx: 6.5, vy: 0, rotation: 0, width: 30, height: 30, 
             isGrounded: false, jumpHold: false, isRotating: false, rotTarget: 0,
             gravitySign: 1, mode: "cube" 
         };
@@ -257,7 +291,6 @@
                 startActualGame(lvl.objects);
             });
         }
-
         document.getElementById("prev-lvl-btn").addEventListener("click", () => {
             if (localLevels.length === 0) return;
             if (currentLevelIdx > 0) { currentLevelIdx--; renderLevelCard(); }
@@ -274,81 +307,247 @@
             editorCanvas.width = 1300;
             editorCanvas.height = 900;
         }
+
         function drawEditor() {
             editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+            editorCtx.save();
+            editorCtx.translate(editorScrollX, editorScrollY);
+
             editorCtx.strokeStyle = "rgba(0,0,0,0.06)";
             editorCtx.lineWidth = 1;
-            for (let x = 0; x < editorCanvas.width; x += BLOCK_SIZE) {
-                editorCtx.beginPath(); editorCtx.moveTo(x, 0); editorCtx.lineTo(x, editorCanvas.height); editorCtx.stroke();
+            let startX = Math.floor(-editorScrollX / BLOCK_SIZE) * BLOCK_SIZE;
+            let startY = Math.floor(-editorScrollY / BLOCK_SIZE) * BLOCK_SIZE;
+            
+            for (let x = startX; x < startX + editorCanvas.width + BLOCK_SIZE; x += BLOCK_SIZE) {
+                editorCtx.beginPath(); editorCtx.moveTo(x, startY); editorCtx.lineTo(x, startY + editorCanvas.height + BLOCK_SIZE); editorCtx.stroke();
             }
-            for (let y = 0; y < editorCanvas.height; y += BLOCK_SIZE) {
-                editorCtx.beginPath(); editorCtx.moveTo(0, y); editorCtx.lineTo(editorCanvas.width, y); editorCtx.stroke();
+            for (let y = startY; y < startY + editorCanvas.height + BLOCK_SIZE; y += BLOCK_SIZE) {
+                editorCtx.beginPath(); editorCtx.moveTo(startX, y); editorCtx.lineTo(startX + editorCanvas.width + BLOCK_SIZE, y); editorCtx.stroke();
             }
+
             editorCtx.strokeStyle = "#000000";
             editorCtx.lineWidth = 4;
-            editorCtx.beginPath(); editorCtx.moveTo(0, 720); editorCtx.lineTo(editorCanvas.width, 720); editorCtx.stroke();
+            editorCtx.beginPath(); editorCtx.moveTo(-editorScrollX, 720); editorCtx.lineTo(-editorScrollX + editorCanvas.width, 720); editorCtx.stroke();
 
             editorObjects.forEach(obj => {
                 drawObjectOnCanvas(editorCtx, obj);
-                if (activeTab === "edit" && selectedObjectForEdit === obj) {
+                let sizeMult = obj.scale || 1;
+                if ((activeTab === "edit" && selectedObjectForEdit === obj) || selectedObjectsGroup.includes(obj)) {
                     editorCtx.strokeStyle = "#ff003c"; editorCtx.lineWidth = 3;
                     let w = obj.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE;
-                    let h = (obj.type === 8 || obj.type === 9 || obj.type === 10 || obj.type === 11) ? BLOCK_SIZE * 3 : (obj.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE);
-                    editorCtx.strokeRect(obj.x, obj.y, w, h);
+                    let h = (obj.type >= 8 && obj.type <= 12) ? BLOCK_SIZE * 3 : (obj.type === 3 ? BLOCK_SIZE * 2 : BLOCK_SIZE);
+                    editorCtx.strokeRect(obj.x, obj.y, w * sizeMult, h * sizeMult);
                 }
             });
+
+            if (isSelectionBoxActive) {
+                editorCtx.strokeStyle = "rgba(52, 152, 219, 0.8)";
+                editorCtx.lineWidth = 2;
+                editorCtx.fillStyle = "rgba(52, 152, 219, 0.1)";
+                editorCtx.fillRect(selectionStartX, selectionStartY, selectionCurrentX - selectionStartX, selectionCurrentY - selectionStartY);
+                editorCtx.strokeRect(selectionStartX, selectionStartY, selectionCurrentX - selectionStartX, selectionCurrentY - selectionStartY);
+            }
+            editorCtx.restore();
         }
 
         function drawObjectOnCanvas(ctx, obj) {
             let col = obj.color || "#000000";
+            let s = obj.scale || 1;
             ctx.save();
+            ctx.translate(obj.x, obj.y);
+            ctx.scale(s, s);
             ctx.fillStyle = col;
 
             if (obj.type === 1) {
-                ctx.fillRect(obj.x, obj.y, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
             } else if (obj.type === 2) {
-                ctx.beginPath(); ctx.moveTo(obj.x, obj.y + BLOCK_SIZE); ctx.lineTo(obj.x + BLOCK_SIZE / 2, obj.y); ctx.lineTo(obj.x + BLOCK_SIZE, obj.y + BLOCK_SIZE); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, BLOCK_SIZE); ctx.lineTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE, BLOCK_SIZE); ctx.closePath(); ctx.fill();
             } else if (obj.type === 3) {
-                ctx.beginPath(); ctx.arc(obj.x + BLOCK_SIZE, obj.y + BLOCK_SIZE, BLOCK_SIZE - 2, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(obj.x + BLOCK_SIZE, obj.y + BLOCK_SIZE, BLOCK_SIZE / 2, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE - 2, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE / 2, 0, Math.PI * 2); ctx.stroke();
             } else if (obj.type === 4) {
-                ctx.fillStyle = "#f1c40f"; ctx.fillRect(obj.x, obj.y + BLOCK_SIZE - 6, BLOCK_SIZE, 6);
+                ctx.fillStyle = "#f1c40f"; ctx.fillRect(0, BLOCK_SIZE - 6, BLOCK_SIZE, 6);
             } else if (obj.type === 5) {
-                ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.arc(obj.x + BLOCK_SIZE / 2, obj.y + BLOCK_SIZE / 2, BLOCK_SIZE / 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.arc(BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 3, 0, Math.PI * 2); ctx.fill();
             } else if (obj.type === 6) {
-                ctx.fillStyle = "#3498db"; ctx.fillRect(obj.x, obj.y + BLOCK_SIZE - 6, BLOCK_SIZE, 6);
+                ctx.fillStyle = "#3498db"; ctx.fillRect(0, BLOCK_SIZE - 6, BLOCK_SIZE, 6);
             } else if (obj.type === 7) {
-                ctx.fillStyle = "#3498db"; ctx.beginPath(); ctx.arc(obj.x + BLOCK_SIZE / 2, obj.y + BLOCK_SIZE / 2, BLOCK_SIZE / 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#3498db"; ctx.beginPath(); ctx.arc(BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 3, 0, Math.PI * 2); ctx.fill();
             } else if (obj.type === 8) {
-                ctx.fillStyle = "#f1c40f"; ctx.fillRect(obj.x, obj.y, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.fillStyle = "#f1c40f"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
             } else if (obj.type === 9) {
-                ctx.fillStyle = "#3498db"; ctx.fillRect(obj.x, obj.y, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.fillStyle = "#3498db"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
             } else if (obj.type === 10) {
-                ctx.fillStyle = "#ff6b81"; ctx.fillRect(obj.x, obj.y, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.fillStyle = "#ff6b81"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
             } else if (obj.type === 11) {
-                ctx.fillStyle = "#2ecc71"; ctx.fillRect(obj.x, obj.y, BLOCK_SIZE, BLOCK_SIZE * 3);
+                ctx.fillStyle = "#2ecc71"; ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE * 3);
+            } else if (obj.type === 12) {
+                ctx.fillStyle = "#9b59b6"; ctx.beginPath(); ctx.moveTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE, BLOCK_SIZE * 1.5); ctx.lineTo(BLOCK_SIZE / 2, BLOCK_SIZE * 3); ctx.lineTo(0, BLOCK_SIZE * 1.5); ctx.closePath(); ctx.fill();
+            } else if (obj.type === 13) {
+                ctx.strokeStyle = "#e67e22"; ctx.lineWidth = 3; ctx.strokeRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.fillStyle = "#e67e22"; ctx.font = "10px Arial"; ctx.fillText("START", 2, BLOCK_SIZE - 10);
+            } else if (obj.type === 14) {
+                ctx.strokeStyle = "#ff003c"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(BLOCK_SIZE / 2, 0); ctx.lineTo(BLOCK_SIZE / 2, BLOCK_SIZE); ctx.stroke();
+                ctx.fillStyle = "#ff003c"; ctx.font = "10px Arial"; ctx.fillText("FINISH", 4, BLOCK_SIZE - 10);
             }
             ctx.restore();
         }
-
-        editorCanvas.addEventListener("click", e => {
+        editorCanvas.addEventListener("mousedown", e => {
             const rect = editorCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const mouseX = e.clientX - rect.left - editorScrollX;
+            const mouseY = e.clientY - rect.top - editorScrollY;
+            
             const cellX = Math.floor(mouseX / BLOCK_SIZE) * BLOCK_SIZE;
             const cellY = Math.floor(mouseY / BLOCK_SIZE) * BLOCK_SIZE;
-            let existingIndex = editorObjects.findIndex(o => o.x === cellX && o.y === cellY);
+            
+            dragStartMouseX = e.clientX;
+            dragStartMouseY = e.clientY;
 
             if (activeTab === "build") {
-                if (existingIndex !== -1) editorObjects.splice(existingIndex, 1);
-                editorObjects.push({ type: selectedBlockType, x: cellX, y: cellY, color: "#000000" });
+                if (brushMode === "single") {
+                    let clickedObj = editorObjects.find(o => o.x === cellX && o.y === cellY);
+                    if (!clickedObj) {
+                        isEditorPanning = true;
+                        editorPanStartX = e.clientX - editorScrollX;
+                        editorPanStartY = e.clientY - editorScrollY;
+                    } else {
+                        let existingIndex = editorObjects.indexOf(clickedObj);
+                        editorObjects.splice(existingIndex, 1);
+                        editorObjects.push({ type: selectedBlockType, x: cellX, y: cellY, color: "#000000", scale: 1 });
+                        drawEditor();
+                    }
+                } else if (brushMode === "more") {
+                    isMoreBuilding = true;
+                    buildAtPosition(cellX, cellY);
+                }
             } else if (activeTab === "edit") {
-                if (existingIndex !== -1) selectedObjectForEdit = editorObjects[existingIndex];
-                else selectedObjectForEdit = null;
+                if (isShiftPressed) {
+                    isSelectionBoxActive = true;
+                    selectionStartX = e.clientX - rect.left - editorScrollX;
+                    selectionStartY = e.clientY - rect.top - editorScrollY;
+                    selectionCurrentX = selectionStartX;
+                    selectionCurrentY = selectionStartY;
+                } else {
+                    let clickedObj = editorObjects.find(o => mouseX >= o.x && mouseX <= o.x + BLOCK_SIZE && mouseY >= o.y && mouseY <= o.y + BLOCK_SIZE);
+                    if (clickedObj) {
+                        if (selectedObjectsGroup.includes(clickedObj)) {
+                            isDraggingGroup = true;
+                        } else {
+                            selectedObjectForEdit = clickedObj;
+                            selectedObjectsGroup = [clickedObj];
+                            isDraggingGroup = true;
+                            document.getElementById("hex-color-input").value = clickedObj.color || "#000000";
+                            document.getElementById("obj-scale-slider").value = clickedObj.scale || 1;
+                            document.getElementById("scale-slider-val").textContent = clickedObj.scale || 1;
+                        }
+                    } else {
+                        selectedObjectForEdit = null;
+                        selectedObjectsGroup = [];
+                    }
+                    drawEditor();
+                }
             } else if (activeTab === "delete") {
-                if (existingIndex !== -1) editorObjects.splice(existingIndex, 1);
+                let existingIndex = editorObjects.findIndex(o => mouseX >= o.x && mouseX <= o.x + BLOCK_SIZE && mouseY >= o.y && mouseY <= o.y + BLOCK_SIZE);
+                if (existingIndex !== -1) {
+                    editorObjects.splice(existingIndex, 1);
+                    drawEditor();
+                }
             }
+        });
+
+        window.addEventListener("mousemove", e => {
+            if (!gameActive && currentScreen === "editor") {
+                const rect = editorCanvas.getBoundingClientRect();
+                if (isEditorPanning) {
+                    editorScrollX = e.clientX - editorPanStartX;
+                    editorScrollY = e.clientY - editorPanStartY;
+                    drawEditor();
+                } else if (isMoreBuilding) {
+                    const mouseX = e.clientX - rect.left - editorScrollX;
+                    const mouseY = e.clientY - rect.top - editorScrollY;
+                    const cellX = Math.floor(mouseX / BLOCK_SIZE) * BLOCK_SIZE;
+                    const cellY = Math.floor(mouseY / BLOCK_SIZE) * BLOCK_SIZE;
+                    buildAtPosition(cellX, cellY);
+                } else if (isSelectionBoxActive) {
+                    selectionCurrentX = e.clientX - rect.left - editorScrollX;
+                    selectionCurrentY = e.clientY - rect.top - editorScrollY;
+                    updateSelectionGroup();
+                    drawEditor();
+                } else if (isDraggingGroup && selectedObjectsGroup.length > 0) {
+                    let dx = e.clientX - dragStartMouseX;
+                    let dy = e.clientY - dragStartMouseY;
+                    if (!isCtrlPressed) {
+                        dx = Math.round(dx / BLOCK_SIZE) * BLOCK_SIZE;
+                        dy = Math.round(dy / BLOCK_SIZE) * BLOCK_SIZE;
+                    }
+                    if (dx !== 0 || dy !== 0) {
+                        selectedObjectsGroup.forEach(obj => {
+                            obj.x += dx;
+                            obj.y += dy;
+                        });
+                        dragStartMouseX += dx;
+                        dragStartMouseY += dy;
+                        drawEditor();
+                    }
+                }
+            }
+        });
+
+        window.addEventListener("mouseup", () => {
+            isEditorPanning = false;
+            isMoreBuilding = false;
+            isSelectionBoxActive = false;
+            isDraggingGroup = false;
+        });
+
+        function buildAtPosition(cx, cy) {
+            let exist = editorObjects.some(o => o.x === cx && o.y === cy);
+            if (!exist) {
+                editorObjects.push({ type: selectedBlockType, x: cx, y: cy, color: "#000000", scale: 1 });
+                drawEditor();
+            }
+        }
+
+        function updateSelectionGroup() {
+            let x1 = Math.min(selectionStartX, selectionCurrentX);
+            let x2 = Math.max(selectionStartX, selectionCurrentX);
+            let y1 = Math.min(selectionStartY, selectionCurrentY);
+            let y2 = Math.max(selectionStartY, selectionCurrentY);
+            selectedObjectsGroup = editorObjects.filter(o => o.x >= x1 && o.x <= x2 && o.y >= y1 && o.y <= y2);
+            if (selectedObjectsGroup.length === 1) selectedObjectForEdit = selectedObjectsGroup[0];
+        }
+        document.getElementById("hex-color-input").addEventListener("input", e => {
+            let val = e.target.value;
+            if (/^#[0-9A-F]{6}$/i.test(val)) {
+                selectedObjectsGroup.forEach(obj => obj.color = val);
+                drawEditor();
+            }
+        });
+
+        const sSlider = document.getElementById("obj-scale-slider");
+        const sSliderVal = document.getElementById("scale-slider-val");
+        sSlider.addEventListener("input", e => {
+            let val = parseFloat(e.target.value);
+            sSliderVal.textContent = val.toFixed(1);
+            selectedObjectsGroup.forEach(obj => obj.scale = val);
             drawEditor();
+        });
+
+        window.addEventListener("keydown", e => {
+            if (currentScreen === "editor") {
+                if (e.key === "Tab") {
+                    e.preventDefault();
+                    brushMode = brushMode === "single" ? "more" : "single";
+                    document.getElementById("brush-mode-txt").textContent = `Кисть: ${brushMode === "single" ? "Single" : "More"} (TAB)`;
+                }
+                if (e.key === "Control") isCtrlPressed = true;
+                if (e.key === "Shift") isShiftPressed = true;
+            }
+        });
+
+        window.addEventListener("keyup", e => {
+            if (e.key === "Control") isCtrlPressed = false;
+            if (e.key === "Shift") isShiftPressed = false;
         });
 
         document.getElementById("act-copy").addEventListener("click", () => {
@@ -357,31 +556,9 @@
 
         document.getElementById("act-paste").addEventListener("click", () => {
             if (clipboardObject) {
-                let existingIndex = editorObjects.findIndex(o => o.x === clipboardObject.x && o.y === clipboardObject.y);
-                if (existingIndex === -1) {
-                    editorObjects.push({ ...clipboardObject });
-                    drawEditor();
-                }
-            }
-        });
-        document.getElementById("act-copypaste").addEventListener("click", () => {
-            if (selectedObjectForEdit) {
-                clipboardObject = { ...selectedObjectForEdit };
-                clipboardObject.x += BLOCK_SIZE;
-                let existingIndex = editorObjects.findIndex(o => o.x === clipboardObject.x && o.y === clipboardObject.y);
-                if (existingIndex === -1) {
-                    editorObjects.push({ ...clipboardObject });
-                    selectedObjectForEdit = editorObjects[editorObjects.length - 1];
-                    drawEditor();
-                }
-            }
-        });
-
-        document.getElementById("act-edit-obj").addEventListener("click", () => {
-            if (selectedObjectForEdit) {
-                let curColorIdx = legendsColors.indexOf(selectedObjectForEdit.color);
-                let nextColorIdx = (curColorIdx + 1) % legendsColors.length;
-                selectedObjectForEdit.color = legendsColors[nextColorIdx];
+                let rx = Math.floor((-editorScrollX + 200) / BLOCK_SIZE) * BLOCK_SIZE;
+                let ry = Math.floor((-editorScrollY + 200) / BLOCK_SIZE) * BLOCK_SIZE;
+                editorObjects.push({ ...clipboardObject, x: rx, y: ry });
                 drawEditor();
             }
         });
@@ -391,11 +568,11 @@
         let gameLoopId = null;
 
         function spawnBurstParticles(x, y, color) {
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 14; i++) {
                 particles.push({
                     type: "burst", x: x, y: y,
-                    vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
-                    size: 2 + Math.random() * 3, alpha: 1, fade: 0.03 + Math.random() * 0.02, color: color
+                    vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
+                    size: 2.5 + Math.random() * 4, alpha: 1, fade: 0.025 + Math.random() * 0.02, color: color
                 });
             }
         }
@@ -417,8 +594,9 @@
             }
             gameCanvas.style.display = "block";
 
-            resetPlayerState();
-            cameraX = 0;
+            let startPosObj = gameObjects.find(o => o.type === 13);
+            resetPlayerState(startPosObj);
+            cameraX = player.x - 300;
 
             window.addEventListener("keydown", handleGameControls);
             window.addEventListener("keyup", handleGameControlsUp);
@@ -427,9 +605,11 @@
             gameLoopId = setInterval(gameUpdateLoop, FRAME_TIME);
         }
 
-        function resetPlayerState() {
+        function resetPlayerState(startPos) {
             player = { 
-                x: 50, y: 690, vx: 6.5, vy: 0, rotation: 0, width: 30, height: 30, 
+                x: startPos ? startPos.x : 50, 
+                y: startPos ? startPos.y : 690, 
+                vx: 6.5, vy: 0, rotation: 0, width: 30, height: 30, 
                 isGrounded: true, jumpHold: player.jumpHold || false, isRotating: false, rotTarget: 0,
                 gravitySign: 1, mode: "cube" 
             };
@@ -453,7 +633,11 @@
         function gameUpdateLoop() {
             player.x += player.vx;
             
-            if (player.mode === "ship") {
+            if (player.mode === "wave") {
+                player.vy = player.jumpHold ? -player.vx * player.gravitySign : player.vx * player.gravitySign;
+                player.isRotating = false;
+                player.rotation = player.jumpHold ? -45 * player.gravitySign : 45 * player.gravitySign;
+            } else if (player.mode === "ship") {
                 let thrust = player.jumpHold ? -0.42 * player.gravitySign : 0.42 * player.gravitySign;
                 player.vy += thrust;
                 let cap = 7;
@@ -485,24 +669,28 @@
             let playerSolidBox = { x: player.x, y: player.y, w: player.width, h: player.height };
             if (player.mode === "ship") {
                 playerSolidBox = { x: player.x + 16, y: player.y + 7, w: 28, h: 15 };
+            } else if (player.mode === "wave") {
+                playerSolidBox = { x: player.x + player.width - 2.6, y: player.y + player.height / 2 - 1.3, w: 2.6, h: 2.6 };
             }
-
-            let hitAnyPad = false;
 
             for (let i = 0; i < gameObjects.length; i++) {
                 let obj = gameObjects[i];
+                let s = obj.scale || 1;
                 if (obj.type === 1) {
-                    if (playerSolidBox.x + playerSolidBox.w > obj.x && playerSolidBox.x < obj.x + BLOCK_SIZE) {
+                    let bW = BLOCK_SIZE * s;
+                    let bH = BLOCK_SIZE * s;
+                    if (playerSolidBox.x + playerSolidBox.w > obj.x && playerSolidBox.x < obj.x + bW) {
                         if (player.gravitySign === 1) {
                             if (playerSolidBox.y + playerSolidBox.h >= obj.y && playerSolidBox.y + playerSolidBox.h <= obj.y + 10 && player.vy >= 0) {
                                 player.y = obj.y - player.height; player.vy = 0; onSolid = true;
-                            } else if (playerSolidBox.y < obj.y + BLOCK_SIZE && playerSolidBox.y + playerSolidBox.h > obj.y) {
-                                if (!isGodMode) handlePlayerDeath();
+                            } else if (playerSolidBox.y < obj.y + bH && playerSolidBox.y + playerSolidBox.h > obj.y) {
+                                if (player.mode === "wave") { if (!isGodMode) handlePlayerDeath(); }
+                                else { if (!isGodMode) handlePlayerDeath(); }
                             }
                         } else {
-                            if (playerSolidBox.y <= obj.y + BLOCK_SIZE && playerSolidBox.y >= obj.y + BLOCK_SIZE - 10 && player.vy <= 0) {
-                                player.y = obj.y + BLOCK_SIZE; player.vy = 0; onSolid = true;
-                            } else if (playerSolidBox.y < obj.y + BLOCK_SIZE && playerSolidBox.y + playerSolidBox.h > obj.y) {
+                            if (playerSolidBox.y <= obj.y + bH && playerSolidBox.y >= obj.y + bH - 10 && player.vy <= 0) {
+                                player.y = obj.y + bH; player.vy = 0; onSolid = true;
+                            } else if (playerSolidBox.y < obj.y + bH && playerSolidBox.y + playerSolidBox.h > obj.y) {
                                 if (!isGodMode) handlePlayerDeath();
                             }
                         }
@@ -512,12 +700,7 @@
 
             player.isGrounded = onSolid;
 
-            if (player.mode === "ship") {
-                player.isRotating = false;
-                player.rotation = player.vy * 6.5 * player.gravitySign;
-                if (player.rotation > 45) player.rotation = 45;
-                if (player.rotation < -45) player.rotation = -45;
-            } else {
+            if (player.mode === "cube") {
                 if (player.isGrounded) {
                     player.rotation = Math.round(player.rotation / 90) * 90;
                     player.isRotating = false;
@@ -527,29 +710,37 @@
                         player.rotTarget = player.rotation + 90 * player.gravitySign;
                     }
                 } else {
-                    if (player.isRotating) {
-                        player.rotation += 2.5 * player.gravitySign;
-                    }
+                    player.rotation += 2.14 * player.gravitySign;
                 }
+            } else if (player.mode === "ship" && !player.isGrounded) {
+                player.rotation = player.vy * 6.5 * player.gravitySign;
+                if (player.rotation > 45) player.rotation = 45;
+                if (player.rotation < -45) player.rotation = -45;
             }
 
             cameraX = player.x - 300;
             let playerDangerBox = { x: player.x + 9, y: player.y + 9, w: 12, h: 12 };
             if (player.mode === "ship") {
                 playerDangerBox = { x: player.x + 26, y: player.y + 11, w: 8, h: 8 };
+            } else if (player.mode === "wave") {
+                playerDangerBox = { x: player.x + player.width - 2.6, y: player.y + player.height / 2 - 1.3, w: 2.6, h: 2.6 };
             }
+
+            let hitAnyPad = false;
 
             for (let i = 0; i < gameObjects.length; i++) {
                 let obj = gameObjects[i];
+                let s = obj.scale || 1;
                 
-                if (obj.type === 8 || obj.type === 9 || obj.type === 10 || obj.type === 11) {
+                if (obj.type >= 8 && obj.type <= 12) {
                     if (Math.random() < 0.2) {
                         let pColor = "#f1c40f";
                         if (obj.type === 9) pColor = "#3498db";
                         if (obj.type === 10) pColor = "#ff6b81";
                         if (obj.type === 11) pColor = "#2ecc71";
+                        if (obj.type === 12) pColor = "#9b59b6";
                         particles.push({
-                            type: "ambient", x: obj.x + Math.random() * BLOCK_SIZE, y: obj.y - BLOCK_SIZE + Math.random() * (BLOCK_SIZE * 3),
+                            type: "ambient", x: obj.x + Math.random() * (BLOCK_SIZE * s), y: obj.y + Math.random() * (BLOCK_SIZE * 3 * s),
                             vx: (Math.random() - 0.5) * 1, vy: -1.5 - Math.random() * 2.5,
                             size: 2 + Math.random() * 2.5, alpha: 0.9, fade: 0.02 + Math.random() * 0.02, color: pColor
                         });
@@ -562,7 +753,7 @@
                         let angle = Math.random() * Math.PI * 2;
                         let radius = (obj.type === 4 || obj.type === 6) ? 15 : 10;
                         particles.push({
-                            type: "ambient", x: obj.x + BLOCK_SIZE / 2 + Math.cos(angle) * radius, y: obj.y + BLOCK_SIZE / 2 + Math.sin(angle) * radius,
+                            type: "ambient", x: obj.x + (BLOCK_SIZE * s) / 2 + Math.cos(angle) * radius, y: obj.y + (BLOCK_SIZE * s) / 2 + Math.sin(angle) * radius,
                             vx: Math.cos(angle) * 0.4, vy: Math.sin(angle) * 0.4,
                             size: 1.5 + Math.random() * 2, alpha: 0.8, fade: 0.01 + Math.random() * 0.01, color: pColor
                         });
@@ -570,53 +761,62 @@
                 }
 
                 if (obj.type === 2) {
-                    let spikeHitbox = { x: obj.x + 3, y: obj.y + 5, w: 24, h: 25 };
+                    let spikeHitbox = { x: obj.x + 3 * s, y: obj.y + 6 * s, w: 24 * s, h: 24 * s };
                     if (checkAABB(playerDangerBox, spikeHitbox) && !isGodMode) handlePlayerDeath();
                 } else if (obj.type === 3) {
-                    let sawHitbox = { x: obj.x + 3, y: obj.y + 3, w: 54, h: 54 };
+                    let sawHitbox = { x: obj.x + 6 * s, y: obj.y + 6 * s, w: 48 * s, h: 48 * s };
                     if (checkAABB(playerDangerBox, sawHitbox) && !isGodMode) handlePlayerDeath();
                 } else if (obj.type === 4) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + BLOCK_SIZE - 6, w: BLOCK_SIZE, h: 6 })) {
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + (BLOCK_SIZE * s) - 6, w: BLOCK_SIZE * s, h: 6 })) {
                         hitAnyPad = true;
                         if (!padCooldown) {
                             player.vy = -21.5 * player.gravitySign; player.isGrounded = false;
-                            player.isRotating = true; player.rotTarget = player.rotation + 180 * player.gravitySign;
-                            spawnBurstParticles(obj.x + 15, obj.y + 15, "#f1c40f");
+                            if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 180 * player.gravitySign; }
+                            spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#f1c40f");
                             padCooldown = true;
                         }
                     }
                 } else if (obj.type === 5) {
-                    if (player.jumpHold && checkAABB(playerDangerBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE, h: BLOCK_SIZE })) {
+                    if (player.jumpHold && checkAABB(playerDangerBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * s })) {
                         player.vy = -18.5 * player.gravitySign; player.isGrounded = false;
-                        player.isRotating = true; player.rotTarget = player.rotation + 180 * player.gravitySign;
-                        spawnBurstParticles(obj.x + 15, obj.y + 15, "#f1c40f");
+                        if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 180 * player.gravitySign; }
+                        spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#f1c40f");
                     }
                 } else if (obj.type === 6) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + BLOCK_SIZE - 6, w: BLOCK_SIZE, h: 6 })) {
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y + (BLOCK_SIZE * s) - 6, w: BLOCK_SIZE * s, h: 6 })) {
                         hitAnyPad = true;
                         if (!padCooldown) {
                             player.gravitySign = -player.gravitySign;
                             player.vy = 9.5 * player.gravitySign; player.isGrounded = false;
-                            player.isRotating = true; player.rotTarget = player.rotation + 90 * player.gravitySign;
-                            spawnBurstParticles(obj.x + 15, obj.y + 15, "#3498db");
+                            if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 90 * player.gravitySign; }
+                            spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#3498db");
                             padCooldown = true;
                         }
                     }
                 } else if (obj.type === 7) {
-                    if (player.jumpHold && checkAABB(playerDangerBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE, h: BLOCK_SIZE })) {
+                    if (player.jumpHold && checkAABB(playerDangerBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * s })) {
                         player.gravitySign = -player.gravitySign;
                         player.vy = 5.2 * player.gravitySign; player.isGrounded = false;
-                        player.isRotating = true; player.rotTarget = player.rotation + 90 * player.gravitySign;
-                        spawnBurstParticles(obj.x + 15, obj.y + 15, "#3498db");
+                        if (player.mode === "cube") { player.isRotating = true; player.rotTarget = player.rotation + 90 * player.gravitySign; }
+                        spawnBurstParticles(obj.x + 15 * s, obj.y + 15 * s, "#3498db");
                     }
                 } else if (obj.type === 8) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE, h: BLOCK_SIZE * 3 })) player.gravitySign = -1;
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * 3 * s })) player.gravitySign = -1;
                 } else if (obj.type === 9) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE, h: BLOCK_SIZE * 3 })) player.gravitySign = 1;
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * 3 * s })) player.gravitySign = 1;
                 } else if (obj.type === 10) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE, h: BLOCK_SIZE * 3 })) player.mode = "ship";
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * 3 * s })) player.mode = "ship";
                 } else if (obj.type === 11) {
-                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE, h: BLOCK_SIZE * 3 })) player.mode = "cube";
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * 3 * s })) player.mode = "cube";
+                } else if (obj.type === 12) {
+                    if (checkAABB(playerSolidBox, { x: obj.x, y: obj.y, w: BLOCK_SIZE * s, h: BLOCK_SIZE * 3 * s })) player.mode = "wave";
+                } else if (obj.type === 14) {
+                    if (player.x + player.width > obj.x) {
+                        clearInterval(gameLoopId);
+                        alert("Уровень пройден успешно!");
+                        stopActualGame();
+                        return;
+                    }
                 }
             }
 
@@ -651,15 +851,16 @@
             gameObjects.forEach(obj => { 
                 drawObjectOnCanvas(gameCtx, obj); 
                 if (showHitboxes) {
+                    let s = obj.scale || 1;
                     if (obj.type === 1) {
                         gameCtx.strokeStyle = "#2ecc71"; gameCtx.lineWidth = 2;
-                        gameCtx.strokeRect(obj.x, obj.y, BLOCK_SIZE, BLOCK_SIZE);
+                        gameCtx.strokeRect(obj.x, obj.y, BLOCK_SIZE * s, BLOCK_SIZE * s);
                     } else if (obj.type === 2) {
                         gameCtx.strokeStyle = "#e74c3c"; gameCtx.lineWidth = 2;
-                        gameCtx.strokeRect(obj.x + 3, obj.y + 5, 24, 25);
+                        gameCtx.strokeRect(obj.x + 3 * s, obj.y + 6 * s, 24 * s, 24 * s);
                     } else if (obj.type === 3) {
                         gameCtx.strokeStyle = "#e74c3c"; gameCtx.lineWidth = 2;
-                        gameCtx.strokeRect(obj.x + 3, obj.y + 3, 54, 54);
+                        gameCtx.strokeRect(obj.x + 6 * s, obj.y + 6 * s, 48 * s, 48 * s);
                     }
                 }
             });
@@ -676,22 +877,14 @@
             
             if (player.mode === "ship") {
                 gameCtx.fillStyle = "#000000"; gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 2;
-                gameCtx.beginPath();
-                gameCtx.moveTo(30, 0);
-                gameCtx.lineTo(-10, -10);
-                gameCtx.lineTo(-30, -10);
-                gameCtx.lineTo(-30, 8);
-                gameCtx.lineTo(-20, 15);
-                gameCtx.lineTo(4, 8);
-                gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
-                gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath();
-                gameCtx.moveTo(8, -2); gameCtx.lineTo(-4, -5); gameCtx.lineTo(-12, -2); ctx.closePath(); gameCtx.fill();
-                gameCtx.fillStyle = "#000000"; gameCtx.beginPath();
-                gameCtx.moveTo(-12, -10); gameCtx.lineTo(-24, -25); gameCtx.lineTo(-28, -25); gameCtx.lineTo(-22, -10);
-                gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
-                gameCtx.beginPath();
-                gameCtx.moveTo(-8, 4); gameCtx.lineTo(-24, 10); gameCtx.lineTo(-20, 14); gameCtx.lineTo(-4, 6);
-                gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
+                gameCtx.beginPath(); gameCtx.moveTo(30, 0); gameCtx.lineTo(-10, -10); gameCtx.lineTo(-30, -10); gameCtx.lineTo(-30, 8); gameCtx.lineTo(-20, 15); gameCtx.lineTo(4, 8); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
+                gameCtx.fillStyle = "#ffffff"; gameCtx.beginPath(); gameCtx.moveTo(8, -2); gameCtx.lineTo(-4, -5); gameCtx.lineTo(-12, -2); gameCtx.closePath(); gameCtx.fill();
+                gameCtx.fillStyle = "#000000"; gameCtx.beginPath(); gameCtx.moveTo(-12, -10); gameCtx.lineTo(-24, -25); gameCtx.lineTo(-28, -25); gameCtx.lineTo(-22, -10); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
+                gameCtx.beginPath(); gameCtx.moveTo(-8, 4); gameCtx.lineTo(-24, 10); gameCtx.lineTo(-20, 14); gameCtx.lineTo(-4, 6); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
+                gameCtx.fillStyle = "#000000"; gameCtx.fillRect(-12, -5, 12, 12); gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 1.5; gameCtx.strokeRect(-10, -3, 8, 8);
+            } else if (player.mode === "wave") {
+                gameCtx.fillStyle = "#000000"; gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 2.5;
+                gameCtx.beginPath(); gameCtx.moveTo(player.width / 2, 0); gameCtx.lineTo(-player.width / 2, -player.height / 2); gameCtx.lineTo(-player.width / 4, 0); gameCtx.lineTo(-player.width / 2, player.height / 2); gameCtx.closePath(); gameCtx.fill(); gameCtx.stroke();
             } else {
                 gameCtx.fillStyle = "#000000"; gameCtx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
                 gameCtx.strokeStyle = "#ffffff"; gameCtx.lineWidth = 3; gameCtx.strokeRect(-player.width / 2 + 4, -player.height / 2 + 4, player.width - 8, player.height - 8);
@@ -701,16 +894,18 @@
             if (showHitboxes) {
                 gameCtx.strokeStyle = "#2ecc71"; gameCtx.lineWidth = 2;
                 if (player.mode === "ship") gameCtx.strokeRect(player.x + 16, player.y + 7, 28, 15);
-                else gameCtx.strokeRect(player.x, player.y, player.width, player.height);
+                else if (player.mode === "cube") gameCtx.strokeRect(player.x, player.y, player.width, player.height);
                 gameCtx.strokeStyle = "#e74c3c";
                 if (player.mode === "ship") gameCtx.strokeRect(player.x + 26, player.y + 11, 8, 8);
+                else if (player.mode === "wave") gameCtx.strokeRect(player.x + player.width - 2.6, player.y + player.height / 2 - 1.3, 2.6, 2.6);
                 else gameCtx.strokeRect(player.x + 9, player.y + 9, 12, 12);
             }
             gameCtx.restore();
         }
-
         function handlePlayerDeath() {
-            player.x = 50; player.y = player.gravitySign === 1 ? 690 : 0;
+            let startPosObj = gameObjects.find(o => o.type === 13);
+            player.x = startPosObj ? startPosObj.x : 50;
+            player.y = startPosObj ? startPosObj.y : (player.gravitySign === 1 ? 690 : 0);
             player.vy = 0; player.rotation = 0; player.isGrounded = true; player.isRotating = false;
         }
 
@@ -766,13 +961,11 @@
         });
         document.getElementById("game-restart-btn").addEventListener("click", () => {
             document.getElementById("game-pause-overlay").style.display = "none";
-            handlePlayerStateAfterRestart();
+            let startPosObj = gameObjects.find(o => o.type === 13);
+            resetPlayerState(startPosObj);
+            particles = [];
             gameLoopId = setInterval(gameUpdateLoop, FRAME_TIME);
         });
-        function handlePlayerStateAfterRestart() {
-            resetPlayerState();
-            particles = [];
-        }
         document.getElementById("game-exit-btn").addEventListener("click", () => {
             document.getElementById("game-pause-overlay").style.display = "none"; stopActualGame();
         });
